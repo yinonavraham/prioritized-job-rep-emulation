@@ -52,16 +52,4 @@ public class Logger
 	{
 		return new Location(cls);
 	}
-	
-	public static void main(String[] args)
-	{
-		Location location = Logger.getLocation(Logger.class);
-		location.entering("main");
-		location.debug("debug");
-		location.info("info");
-		location.warning("warning");
-		location.severe("severe");
-		location.throwing("main", new Exception("error"));
-		location.exiting("main");
-	}
 }
