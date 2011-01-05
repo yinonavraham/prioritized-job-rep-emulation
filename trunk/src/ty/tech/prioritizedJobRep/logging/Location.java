@@ -66,23 +66,23 @@ public class Location
 		_logger.finer(msg);
 	}
 	
-	public void info(String msg)
-	{
-		_logger.info(msg);
-	}
+//	public void info(String msg)
+//	{
+//		_logger.info(msg);
+//	}
 	
 	public void throwing(String methodName, Throwable thrown)
 	{
 		_logger.throwing(_cat, methodName, thrown);
 	}
 	
-	public void severe(String msg)
-	{
-		_logger.severe(msg);
-	}
-	
-	public void warning(String msg)
-	{
-		_logger.warning(msg);
-	}
+//	public void severe(String msg)
+//	{
+//		_logger.severe(msg);
+//	}
+//	
+//	public void warning(String msg)
+//	{
+//		_logger.warning(msg);
+//	}
 }
