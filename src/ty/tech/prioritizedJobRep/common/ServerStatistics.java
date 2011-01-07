@@ -35,7 +35,7 @@ public class ServerStatistics implements Serializable
 	{
 		if (serverEndPoint == null)
 			throw new IllegalArgumentException("Server end point cannot be null");
-		_serverID = new EndPoint(serverEndPoint.getHostName(), serverEndPoint.getPort());
+		_serverID = new EndPoint(serverEndPoint.getInetAddress(), serverEndPoint.getPort());
 		init();
 	}
 	
