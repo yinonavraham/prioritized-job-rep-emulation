@@ -3,11 +3,19 @@ package ty.tech.prioritizedJobRep.server;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
+import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.Job;
 
 
 public interface Server extends Remote
 {
+	/**
+	 * Get the end point identifier of the server
+	 * @return the end point where the server is running
+	 * @throws RemoteException
+	 */
+	EndPoint getEndPoint() throws RemoteException;
+	
 	/**
 	 * Add a new job to the server's queue, according to the job's priority
 	 * @param job - job to add

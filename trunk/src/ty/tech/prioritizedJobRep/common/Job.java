@@ -111,7 +111,7 @@ public class Job implements Serializable
 	@Override
 	public String toString()
 	{
-		return "Job_" + _id;
+		return "Job_" + _id + "[" + _priority + "]";
 	}
 
 

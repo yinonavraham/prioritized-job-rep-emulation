@@ -66,7 +66,7 @@ public class ServerPolicy implements Serializable
 		_notifySiblingsOnJobStart = false;
 		_runHPJobWhenLPStarted = false;
 		_HPJobPreemptionOverLP = true;
-		_LPJobReEnter = ReEnter.Last;
+		_LPJobReEnter = ReEnter.First;
 		for (Priority p : Priority.values())
 		{
 			_queueMaxLength.put(p, null);
