@@ -236,6 +236,13 @@ public class CommandArguments
 	}
 	
 	
+	@Override
+	public String toString()
+	{
+		return _props.toString();
+	}
+	
+	
 	public class CommandArg
 	{
 		private String _arg;
