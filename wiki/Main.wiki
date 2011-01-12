@@ -8,3 +8,7 @@ The {{{ty.tech.prioritizedJobRep.Main}}} class is the entrance point of the appl
 = Details =
 
 See [CommandLineInterface Command Line Interface] for further details
+
+= Notes =
+
+ * You can simulate the command arguments in the eclipse IDE - When you have the {{{Main}}} class open, Go to "Run Configurations...", Select "Java Application", create a new run, set the arguments (in the "Arguments" tab) the same as it would be in the command line after the jar file's name (e.g. "{{{-cmd StartServer -port 1234}}}").
