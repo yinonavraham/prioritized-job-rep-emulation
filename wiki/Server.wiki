@@ -1,0 +1,30 @@
+#summary The server entity - processes clients requests
+#labels Phase-Implementation
+
+= Introduction =
+
+The server is one of the main entities. Its task is to execute the jobs in its queues, according to its policy. The server has a queue for each priority (by default there are only two priorities: Low & High). Usually, the jobs are sent to the server by a dispatcher. Each job has a defined priority according to which the server will process it.
+
+= Details =
+
+== Execution Interface ==
+
+ * === {{{void putJob(Job job)}}} ===
+Put (add) a new job in the server's queue. The job will be handled according to its defined priority
+
+ * === {{{void abortJob(Job job)}}} ===
+Abort a job which is currently running in the server or is waiting in one of the server's queues. If the job has already finished - it does nothing. If the job has not yet arrived - the server will remember to cancel the job when it will arrive (the server's "memory" is limited to a configurable timeout - according to the server's policy)
+
+== Management Interface ==
+
+ * === {{{void register(String host, int port)}}} ===
+Register the server in a dispatcher, according to the given arguments - the dispatcher's host and listening port.
+
+ * === {{{void setPolicy(ServerPolicy policy)}}} ===
+Set the policy of the server. This policy is being used by the server and determines some of the behaviors of the server.
+
+ * === {{{void reset()}}} ===
+Reset the server - clear everything from the previous iteration (queues, statistics, etc.)
+
+ * === {{{void stop()}}} ===
+Stop the server. This will terminate the server. After the server is stopped, it needs to be restarted manually in order to start using it again.
