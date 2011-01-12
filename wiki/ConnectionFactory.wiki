@@ -1,4 +1,4 @@
-#summary ty.tech.prioritizedJobRep.api.ConnectionFactory - A factory for connections (RMI) to entities.
+#summary ConnectionFactory - A factory for connections (RMI) to entities.
 #labels Phase-Implementation
 
 = Introduction =
