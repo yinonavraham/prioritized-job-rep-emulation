@@ -11,4 +11,4 @@ The {{{ConnectionFactory}}} is used in order to create a connection (more correc
 
 === {{{Server createServerConnection(String host, int port)}}} ===
 
-Create a proxy for a server which is running on {{{host}}} and listens on {{{port}}}. The returned object implements the {{{[Server]}}} interface.
+Create a proxy for a server which is running on {{{host}}} and listens on {{{port}}}. The returned object implements the [Server] interface.
