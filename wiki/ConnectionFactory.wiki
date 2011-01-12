@@ -1,0 +1,14 @@
+#summary ty.tech.prioritizedJobRep.api.ConnectionFactory - A factory for connections (RMI) to entities.
+#labels Phase-Implementation
+
+= Introduction =
+
+The {{{ConnectionFactory}}} is used in order to create a connection (more correctly - bind) to an entity in the system. The methods of this factory create a proxy for an entity which is probably running on a remote machine (host). Each entity is running on a specific host and listens on a specific port. These methods return the create proxy according to the given host and port which identifies the required entity. These "connection" are handled by the RMI framework and thus do not need nor have a "disconnect" method.
+
+= Details =
+
+== Static Methods ==
+
+=== {{{Server createServerConnection(String host, int port)}}} ===
+
+Create a proxy for a server which is running on {{{host}}} and listens on {{{port}}}. The returned object implements the {{{[Server]}}} interface.
