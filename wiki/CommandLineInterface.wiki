@@ -1,0 +1,62 @@
+#summary Command line interface of the prioritized jobs replication emulation
+#labels Featured,Phase-Deploy,Phase-Implementation
+
+= Introduction =
+
+This is an explenation of how to execute the prioritized jobs replication emulation using the command line
+
+
+= Details =
+
+== The command syntax: ==
+
+{{{java -cp <jar_name> ty.tech.prioritizedJobRep.Main <args>}}}
+
+or (if the Main class is defined in the jar):
+
+{{{java -jar <jar_name> <args>}}}
+
+== Arguments ==
+
+==={{{-cmd <command_name>}}}===
+
+Available commands:
+
+|| StartServer || Start the server on the local host. This command requires the port on which the server will listen. In addition, the target dispatcher details can also be supplied (optional). If the target dispatcher is given, the server will be started and will attempt to register in the dispatcher.||
+|| StopServer || Stop the server on the local host. This command requires the port on which the server listens.||
+|| RegisterServer || Register the server (on the local host) in the target dispatcher. This command requires the port on which the server listens and the target dispatcher details.||
+|| StartDispatcher || Start the dispatcher on the local host. This command requires the port on which the dispatcher will listen.||
+|| StopDispatcher || Stop the dispatcher on the local host. This command requires the port on which the dispatcher listens.||
+|| StartClient || Start the client. This command requires the target dispatcher details - to which the client will send its job requests.||
+|| StopClient || Stop the client ???.||
+
+==={{{-port <port_number>}}}===
+
+The port, an integer in the domain: [1024..65535]. This argument's meaning depends on the specific command (see "{{{-cmd}}}").
+
+==={{{-target <host>:<port>}}}===
+The target entity. This argument's meaning depends on the specific command (see "{{{-cmd}}}").
+
+{{{<host>}}} - The host (name or IP address) on which the target entity is running
+
+{{{<port>}}} - The port on which the target entity is listening (see "{{{-port}}}" for more information).
+
+== Examples ==
+
+*Assume:* {{{<jar_name>}}} is: "{{{pjr.jar}}}"
+
+1. Start a server on the local host which will listen on port 1234:
+
+{{{java -jar pjr.jar -cmd StartServer -port 1234}}}
+
+2. Register the server (already running, listening on port 1234) in the dispatcher on MYMACHINE which listens on port 4321:
+
+{{{java -jar pjr.jar -cmd RegisterServer -port 1234 -target MYMACHINE:4321}}}
+
+3. Stop a server which is running on the local host and listens on port 1234:
+
+{{{java -jar pjr.jar -cmd StopServer -port 1234}}}
+
+== Notes ==
+
+1. All the "Start..." commands start the entity and keeps on running in the same open session (command prompt window). In order to execute a different command - open a new session (command prompt window).
