@@ -32,7 +32,7 @@ Available commands:
 
 ==={{{-port <port_number>}}}===
 
-The port, an integer in the domain: [1024..65535]. This argument's meaning depends on the specific command (see "{{{-cmd}}}").
+The port, an integer in the domain: [[1024..65535]]. This argument's meaning depends on the specific command (see "{{{-cmd}}}").
 
 ==={{{-target <host>:<port>}}}===
 The target entity. This argument's meaning depends on the specific command (see "{{{-cmd}}}").
