@@ -1,0 +1,10 @@
+#summary The Main class - the entrance point of the application - includes the main method
+#labels Phase-Implementation
+
+= Introduction =
+
+The {{{ty.tech.prioritizedJobRep.Main}}} class is the entrance point of the application, it contains the {{{main}}} method. This class should be defined as the main class in the {{{jar}}} file of the application. All the entities are controlled through this class as a CLI tool. The main method parses the arguments and executes the command according to the directions specified in the given arguments.
+
+= Details =
+
+See [CommandLineInterface Command Line Interface] for further details
