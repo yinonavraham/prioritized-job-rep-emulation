@@ -10,7 +10,7 @@ import java.util.Map;
 public class CommandArguments
 {
 	private static final String NEW_LINE = System.getProperty("line.separator");
-	
+
 	private Map<String,CommandArg> _args = new HashMap<String, CommandArg>();
 	private Map<String,Object> _props = new HashMap<String, Object>();
 	
@@ -35,6 +35,9 @@ public class CommandArguments
 			true, true));
 		_args.put("port", new CommandArg("port", "Port number of the entity on the local machine", true, false));
 		_args.put("target", new CommandArg("target", "Remote target identification in the format <HOST NAME or IP>:<PORT>", true, false));
+		_args.put("duration", new CommandArg("duration", "Duration of an iteration (in minutes)", true, false));
+		_args.put("joblength", new CommandArg("joblength", "Duration of job (in seconds)", true, false));
+		_args.put("loads", new CommandArg("loads", "Number of jobs to be sent in a minute", true, false));
 		_args.put("help", new CommandArg("help", "Display help on the command line usage", false, false));
 		_args.put("?", new CommandArg("?", "Same as help", false, false));
 	}
@@ -82,7 +85,6 @@ public class CommandArguments
 		}
 		return true;
 	}
-
 
 	private String processArg(String arg) throws IllegalArgumentException
 	{
@@ -142,6 +144,41 @@ public class CommandArguments
 					throw new IllegalArgumentException(value + " : Illegal port number",e);
 				}
 			}
+			// e.g. -duration 5 (in minutes)
+			else if ("duration".equals(arg))
+			{
+				try 
+				{
+					int duration = Integer.parseInt(value);
+					if (duration < 0 || duration > Integer.MAX_VALUE)
+						throw new IllegalArgumentException(value + " : Illegal duration (minutes)");
+					_props.put(arg, duration);
+				}
+				catch (NumberFormatException e)
+				{
+					throw new IllegalArgumentException(value + " : Illegal duration (minutes)",e);
+				}				
+			}
+			// e.g. -joblength 1 (in seconds)
+			else if ("joblength".equals(arg))
+			{
+				try 
+				{
+					int joblength = Integer.parseInt(value);
+					if (joblength < 0 || joblength > Integer.MAX_VALUE)
+						throw new IllegalArgumentException(value + " : Illegal job length number (seconds)");
+					_props.put(arg, joblength);
+				}
+				catch (NumberFormatException e)
+				{
+					throw new IllegalArgumentException(value + " : Illegal job length number (seconds)",e);
+				}				
+			}			
+			// e.g. -loads 100,200,300 (jobs per minute)
+			else if ("loads".equals(arg))
+			{
+				_props.put(arg, parseLoads(value));				
+			}			
 		}
 		else
 		{
@@ -149,12 +186,29 @@ public class CommandArguments
 		}
 	}
 	
+	private ArrayList<Integer> parseLoads(String value)
+	{
+		ArrayList<Integer> loads = new ArrayList<Integer>();
+		
+		String[] loadsArr = value.split(",");
+		for (int i = 0; i < loadsArr.length ; i++)
+		{
+			int load = Integer.parseInt(loadsArr[i]);
+			if (load < 0 || load > Integer.MAX_VALUE)
+				throw new IllegalArgumentException(value + " : Illegal load number");
+			else
+				loads.add(load);
+		}
+		
+		return loads;
+	}
 	
 	public void printCommandSyntax()
 	{
 		System.err.println("Following are the supported command arguments:");
 		for (CommandArg arg : _args.values())
 		{
+			System.err.println();
 			System.err.println(arg);
 		}
 		System.err.println();
@@ -164,6 +218,10 @@ public class CommandArguments
 		System.err.println(" 2. To register a server on the local host with port 1234,");
 		System.err.println("    in the dispatcher on MYMACHINE with port 4321 use:");
 		System.err.println("       -cmd RegisterServer -port 1234 -target MYMACHINE:4321");
+		System.err.println(" 3. To start a client working with a dispatcher on the local host with port 1234,");
+		System.err.println("    length of each duration 5 mins, length of each job 1 sec, ");
+		System.err.println("    and 3 iterations of loads 200, 300 and 400 jobs per minute, use: ");
+		System.err.println("       -cmd StartClient -duration 5 -jobLength 1 -loads 200,300,400 -target localhost:1234");		
 		System.err.println();
 	}
 
@@ -235,6 +293,28 @@ public class CommandArguments
 		else throw new IllegalArgumentException("Command is missing an argument: target");
 	}
 	
+	public int getDuration()
+	{
+		Object obj = _props.get("duration");
+		if (obj != null) return Integer.valueOf((String)_props.get("duration"));
+		else throw new IllegalArgumentException("Command is missing an argument: duration");
+	}
+	
+	public int getJobLength()
+	{
+		Object obj = _props.get("jobLength");
+		if (obj != null) return Integer.valueOf((String)_props.get("jobLength"));
+		else throw new IllegalArgumentException("Command is missing an argument: jobLength");
+	}	
+	
+	@SuppressWarnings("unchecked")
+	public ArrayList<Integer> getLoads()
+	{
+		Object obj = _props.get("loads");
+		if (obj != null) return (ArrayList<Integer>)_props.get("loads");
+		else throw new IllegalArgumentException("Command is missing an argument: loads");
+	}	
+	
 	
 	@Override
 	public String toString()
@@ -287,7 +367,7 @@ public class CommandArguments
 		public String toString()
 		{
 			StringBuilder sb = new StringBuilder();
-			sb.append(_arg);
+			sb.append("-").append(_arg);
 			sb.append(" [");
 			sb.append(_required == true ? "Required" : "Optional");
 			sb.append("]");
