@@ -10,7 +10,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
 
-import ty.tech.prioritizedJobRep.api.ConnectionFactory;
+import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.common.Entities;
 import ty.tech.prioritizedJobRep.common.Job;
 import ty.tech.prioritizedJobRep.common.Priority;
@@ -89,7 +89,7 @@ public class Main
 		Logger.getLocation(Main.class).debug("Registering the server in the target dispatcher: " + targetHost + ":" + targetPort);
 //		Registry registry = LocateRegistry.getRegistry(port);
 //		Server server = (Server)registry.lookup(Entities.SERVER);
-		Server server = ConnectionFactory.createServerConnection("localhost", port);
+		Server server = ProxyFactory.createServerProxy("localhost", port);
 		server.register(targetHost, targetPort);
 		System.out.println("Server was registered successfully.");
 		Logger.getLocation(Main.class).debug("Server was registered successfully.");
@@ -112,7 +112,7 @@ public class Main
 		Logger.getLocation(Main.class).debug("Stopping server which listens on port: " + port);
 //		Registry registry = LocateRegistry.getRegistry(port);
 //		Server server = (Server)registry.lookup(Entities.SERVER);
-		Server server = ConnectionFactory.createServerConnection("localhost", port);
+		Server server = ProxyFactory.createServerProxy("localhost", port);
 		server.stop();
 		Logger.getLocation(Main.class).debug("Server stopped.");
 		
@@ -123,7 +123,7 @@ public class Main
 	{
 		System.err.println("startClient is not implemented yet");
 		int port = cmdArgs.getPort();
-		Server server = ConnectionFactory.createServerConnection("localhost", port);
+		Server server = ProxyFactory.createServerProxy("localhost", port);
 		Job job = new Job("" + new Date().getTime(),3000);
 		job.setPriority(Priority.Low);
 		server.putJob(job);
