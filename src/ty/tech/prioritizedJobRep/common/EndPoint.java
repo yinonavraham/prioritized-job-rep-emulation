@@ -28,6 +28,12 @@ public class EndPoint implements Serializable
 		_port = port;
 	}
 	
+	public EndPoint(String hostName, int port)
+	{
+		_hostName = hostName;
+		_port = port;
+	}	
+	
 	
 	public EndPoint(int port) throws SocketException, UnknownHostException
 	{
