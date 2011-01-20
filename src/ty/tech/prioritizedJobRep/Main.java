@@ -1,6 +1,8 @@
 package ty.tech.prioritizedJobRep;
 
 import java.io.IOException;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
@@ -8,12 +10,14 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Date;
+import java.util.ArrayList;
 
 import ty.tech.prioritizedJobRep.api.ProxyFactory;
+import ty.tech.prioritizedJobRep.client.Client;
+import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.Entities;
-import ty.tech.prioritizedJobRep.common.Job;
-import ty.tech.prioritizedJobRep.common.Priority;
+import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
+import ty.tech.prioritizedJobRep.dispatcher.DispatcherImpl;
 import ty.tech.prioritizedJobRep.logging.Logger;
 import ty.tech.prioritizedJobRep.server.Server;
 import ty.tech.prioritizedJobRep.server.ServerImpl;
@@ -119,35 +123,58 @@ public class Main
 		Logger.getLocation(Main.class).exiting("stopServer(CommandArguments)");
 	}
 
-	private static void startClient(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException, InterruptedException
+	private static void startClient(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException, InterruptedException, SocketException, UnknownHostException
 	{
-		System.err.println("startClient is not implemented yet");
-		int port = cmdArgs.getPort();
-		Server server = ProxyFactory.createServerProxy("localhost", port);
-		Job job = new Job("" + new Date().getTime(),3000);
-		job.setPriority(Priority.Low);
-		server.putJob(job);
-		job = new Job("" + new Date().getTime(),1000);
-		job.setPriority(Priority.Low);
-		server.putJob(job);
-		job = new Job("" + new Date().getTime(),1000);
-		job.setPriority(Priority.Low);
-		server.putJob(job);
-		Thread.sleep(500);
-		job = new Job("" + new Date().getTime(),1000);
-		job.setPriority(Priority.High);
-		server.putJob(job);
-		job = new Job("" + new Date().getTime(),1000);
-		job.setPriority(Priority.High);
-		server.putJob(job);
-		job = new Job("" + new Date().getTime(),1000);
-		job.setPriority(Priority.High);
-		server.putJob(job);
+		System.err.println("startClient currently in implementation");
+		
+		Logger.getLocation(Main.class).entering("startClient(CommandArguments)", cmdArgs);
+		
+		System.out.println("Starting client on local host.");
+		String targetHost = cmdArgs.getTargetHost();
+		int targetPort = cmdArgs.getTargetPort();
+		int duration = cmdArgs.getDuration();
+		int jobLength = cmdArgs.getJobLength();
+		ArrayList<Integer> loads = cmdArgs.getLoads();
+		
+		System.out.println("Client will work with dispatcher on " + targetHost + ":" + targetPort);
+		Logger.getLocation(Main.class).debug("Starting client with dispatcher on " + targetHost + ":" + targetPort);
+		
+		
+		// Create the server object 
+		EndPoint endPoint = new EndPoint(targetHost, targetPort);
+		Client client = new Client(endPoint, duration, jobLength, loads);
+		client.start();
 	}
 
-	private static void startDispatcher(CommandArguments cmdArgs)
+	private static void startDispatcher(CommandArguments cmdArgs) throws RemoteException, SocketException, UnknownHostException, AlreadyBoundException, NotBoundException
 	{
-		System.err.println("startDispatcher is not implemented yet");
+		System.err.println("startDispatcher is being implemented");
+		
+		Logger.getLocation(Main.class).entering("startDispatcher(CommandArguments)", cmdArgs);
+		
+		System.out.println("Starting dispatcher on local host.");
+		int port = cmdArgs.getPort();
+		System.out.println("Dispatcher will listen on port: " + port);
+		Logger.getLocation(Main.class).debug("Starting dispatcher on port: " + port);
+		// Create the dispatcher object 
+		DispatcherImpl dispatcherObj = new DispatcherImpl(port);
+		// Cast the dispatcher object to a remote object 
+		Dispatcher dispatcher = (Dispatcher) UnicastRemoteObject.exportObject(dispatcherObj, 0);
+		// Bind the remote object's stub in the registry
+		Registry registry = LocateRegistry.createRegistry(port);
+		registry.bind(Entities.DISPATCHER, dispatcher);
+		System.out.println("Dispatcher is running.");
+		Logger.getLocation(Main.class).debug("Dispatcher is running.");
+		dispatcherObj.start();
+
+		/*
+		registry.unbind(Entities.DISPATCHER);
+		UnicastRemoteObject.unexportObject(dispatcherObj, true);
+		System.out.println("Dispatcher is stopped.");
+		Logger.getLocation(Main.class).debug("Dispatcher is stopped.");
+		*/
+		
+		Logger.getLocation(Main.class).exiting("startDispatcher(CommandArguments)");		
 	}
 
 	private static void startServer(CommandArguments cmdArgs) throws AlreadyBoundException, IOException, NotBoundException
@@ -160,6 +187,16 @@ public class Main
 		Logger.getLocation(Main.class).debug("Starting server on port: " + port);
 		// Create the server object 
 		ServerImpl serverObj = new ServerImpl(port);
+		
+		// Cast the server object to a remote object 
+		Server server = (Server) UnicastRemoteObject.exportObject(serverObj, 0);
+		// Bind the remote object's stub in the registry
+		Registry registry = LocateRegistry.createRegistry(port);
+		registry.bind(Entities.SERVER, server);
+		System.out.println("Server is running.");
+		Logger.getLocation(Main.class).debug("Server is running.");
+		serverObj.start();
+		
 		if (cmdArgs.containsArg("target"))
 		{
 			String targetHost = cmdArgs.getTargetHost();
@@ -170,14 +207,7 @@ public class Main
 			System.out.println("Server was registered successfully.");
 			Logger.getLocation(Main.class).debug("Server was registered successfully.");
 		}
-		// Cast the server object to a remote object 
-		Server server = (Server) UnicastRemoteObject.exportObject(serverObj, 0);
-		// Bind the remote object's stub in the registry
-		Registry registry = LocateRegistry.createRegistry(port);
-		registry.bind(Entities.SERVER, server);
-		System.out.println("Server is running.");
-		Logger.getLocation(Main.class).debug("Server is running.");
-		serverObj.start();
+
 		
 		registry.unbind(Entities.SERVER);
 		UnicastRemoteObject.unexportObject(serverObj, true);
