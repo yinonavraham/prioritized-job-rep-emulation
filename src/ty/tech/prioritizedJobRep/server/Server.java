@@ -52,4 +52,9 @@ public interface Server extends Remote
 	 * @param policy
 	 */
 	void setPolicy(ServerPolicy policy) throws RemoteException;
+	
+	/**
+	 * Indicates that the server is still running
+	 */
+	boolean ping();
 }

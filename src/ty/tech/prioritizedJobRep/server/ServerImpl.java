@@ -126,6 +126,12 @@ public class ServerImpl implements Server
 	{
 		return _policy;
 	}
+	
+	@Override
+	public boolean ping()
+	{
+		return true;
+	}
 
 	@Override
 	public synchronized void stop()
