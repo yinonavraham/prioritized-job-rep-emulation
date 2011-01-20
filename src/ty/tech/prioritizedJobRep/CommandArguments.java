@@ -218,7 +218,9 @@ public class CommandArguments
 		System.err.println(" 2. To register a server on the local host with port 1234,");
 		System.err.println("    in the dispatcher on MYMACHINE with port 4321 use:");
 		System.err.println("       -cmd RegisterServer -port 1234 -target MYMACHINE:4321");
-		System.err.println(" 3. To start a client working with a dispatcher on the local host with port 1234,");
+		System.err.println(" 3. To start a dispatcher on the local host with port 1234 use:");
+		System.err.println("       -cmd StartDispatcher -port 1234");		
+		System.err.println(" 4. To start a client working with a dispatcher on the local host with port 1234,");
 		System.err.println("    length of each duration 5 mins, length of each job 1 sec, ");
 		System.err.println("    and 3 iterations of loads 200, 300 and 400 jobs per minute, use: ");
 		System.err.println("       -cmd StartClient -duration 5 -jobLength 1 -loads 200,300,400 -target localhost:1234");		
@@ -274,7 +276,9 @@ public class CommandArguments
 	
 	public int getPort()
 	{
-		return (Integer)_props.get("port");
+		Object obj = _props.get("port");
+		if (obj != null) return (Integer)obj;
+		else throw new IllegalArgumentException("Command is missing an argument: port");		
 	}
 	
 	
@@ -282,7 +286,7 @@ public class CommandArguments
 	{
 		Object obj = _props.get("target");
 		if (obj != null) return ((String)obj).split(":")[0];
-		else throw new IllegalArgumentException("Command is missing an argument: target");
+		else throw new IllegalArgumentException("Command is missing an argument: target host");
 	}
 	
 	
@@ -290,20 +294,20 @@ public class CommandArguments
 	{
 		Object obj = _props.get("target");
 		if (obj != null) return Integer.valueOf(((String)_props.get("target")).split(":")[1]);
-		else throw new IllegalArgumentException("Command is missing an argument: target");
+		else throw new IllegalArgumentException("Command is missing an argument: target port");
 	}
 	
 	public int getDuration()
 	{
 		Object obj = _props.get("duration");
-		if (obj != null) return Integer.valueOf((String)_props.get("duration"));
+		if (obj != null) return (Integer)obj;
 		else throw new IllegalArgumentException("Command is missing an argument: duration");
 	}
 	
 	public int getJobLength()
 	{
-		Object obj = _props.get("jobLength");
-		if (obj != null) return Integer.valueOf((String)_props.get("jobLength"));
+		Object obj = _props.get("joblength");
+		if (obj != null) return (Integer)obj;
 		else throw new IllegalArgumentException("Command is missing an argument: jobLength");
 	}	
 	
@@ -311,7 +315,7 @@ public class CommandArguments
 	public ArrayList<Integer> getLoads()
 	{
 		Object obj = _props.get("loads");
-		if (obj != null) return (ArrayList<Integer>)_props.get("loads");
+		if (obj != null) return (ArrayList<Integer>)obj;
 		else throw new IllegalArgumentException("Command is missing an argument: loads");
 	}	
 	
