@@ -6,14 +6,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class Job implements Serializable, Cloneable
+public class Job implements Serializable
 {
 	private static final long serialVersionUID = -7178564194342696938L;
 
 	private String _id;
 	private Priority _priority = null;
 	private List<EndPoint> _siblingsLocations = new LinkedList<EndPoint>();
-	private Object _result = null;
+	private JobResult _result = null;
 	private JobStatistics _stats;
 	private boolean _hasSiblingInProcess = false;
 	private long _executionTime;
@@ -66,7 +66,7 @@ public class Job implements Serializable, Cloneable
 	}
 
 	
-	public void setResult(Object result)
+	public void setResult(JobResult result)
 	{
 		_result = result;
 	}
@@ -133,10 +133,10 @@ public class Job implements Serializable, Cloneable
 		return _id.hashCode();
 	}
 	
-	
-	@Override
-	protected Object clone() throws CloneNotSupportedException
+	public Job clone(Priority priority) 
 	{
-		return new Job(getID(),getExecutionTime());
+		Job job = new Job(getID(),getExecutionTime());
+		job.setPriority(priority);
+		return job;
 	}
 }
