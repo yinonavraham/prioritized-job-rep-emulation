@@ -9,8 +9,10 @@ import ty.tech.prioritizedJobRep.common.FIFOQueueNotification.Type;
 public class FIFOQueue
 {
 	private String _name;
+	private long _maxSize = -1;
 	private List<Job> _elements = new LinkedList<Job>();
 	private List<FIFOQueueListener> _listeners = new LinkedList<FIFOQueueListener>();
+	private QueueStatistics _stats = new QueueStatistics();
 	
 	public FIFOQueue(String name)
 	{
@@ -22,7 +24,11 @@ public class FIFOQueue
 		if (_elements.size() > 0)
 		{
 			for (int i = 0; i < _elements.size(); i++)
-				if (!_elements.get(i).hasSiblingInProcess()) return _elements.remove(i);
+				if (!_elements.get(i).hasSiblingInProcess()) 
+				{
+					_stats.update(size()-1, false);
+					return _elements.remove(i);
+				}
 		}
 		return null;
 	}
@@ -51,17 +57,44 @@ public class FIFOQueue
 	
 	public synchronized boolean put(Job element)
 	{
-		boolean res = _elements.add(element);
-		if (_elements.size() == 1) 
-			publishNotification(new FIFOQueueNotification(this,
-				Type.NotEmpty, _name + ": a new job was added to the empty queue"));
-		return res;
+		if (_maxSize < 0 || _elements.size() < _maxSize)
+		{
+			boolean res = _elements.add(element);
+			if (res == true) _stats.update(size(), true);
+			if (_elements.size() == 1) 
+				publishNotification(new FIFOQueueNotification(this,
+					Type.NotEmpty, _name + ": a new job was added to the empty queue"));
+			return res;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	
+	public synchronized void putLast(Job element)
+	{
+		if (_maxSize >= 0 && _elements.size() >= _maxSize)
+		{
+			_elements.set(_elements.size()-1, element);
+		}
+		else
+		{
+			_elements.add(element);
+		}
+		_stats.update(size(), false);
 	}
 	
 	
 	public synchronized void putFirst(Job element)
 	{
+		if (_maxSize >= 0 && _elements.size() >= _maxSize)
+		{
+			_elements.remove(_elements.size()-1);
+		}
 		_elements.add(0, element);
+		_stats.update(size(), false);
 		if (_elements.size() == 1) 
 			publishNotification(new FIFOQueueNotification(this,
 				Type.NotEmpty, _name + ": a new job was added to the empty queue"));
@@ -70,19 +103,34 @@ public class FIFOQueue
 	
 	public synchronized boolean remove(Job element)
 	{
-		return _elements.remove(element);
+		boolean res = _elements.remove(element);
+		if (res == true) _stats.update(size(), false);
+		return res;
 	}
 	
 	
 	public synchronized void clear()
 	{
 		_elements.clear();
+		_stats.update(size(), false);
 	}
 	
 	
 	public synchronized boolean contains(Job job)
 	{
 		return _elements.contains(job);
+	}
+	
+	
+	public void setMaxSize(long size)
+	{
+		_maxSize = size;
+	}
+	
+	
+	public long getMaxSize()
+	{
+		return _maxSize;
 	}
 	
 	
@@ -126,5 +174,11 @@ public class FIFOQueue
 		t.setDaemon(true);
 		t.setName("FIFOQueueNotification dispatcher");
 		t.start();
+	}
+	
+	
+	public QueueStatistics getStatistics()
+	{
+		return _stats;
 	}
 }

@@ -37,8 +37,8 @@ public class ServerImpl implements Server
 	{
 		_endPoint = new EndPoint(port);
 		_policy = new ServerPolicy();
-		initQueues();
 		initStatistics();
+		initQueues();
 		initExecutor();
 		startJobsToAbortCleanerDaemon();
 	}
@@ -94,9 +94,12 @@ public class ServerImpl implements Server
 
 	private void initQueues()
 	{
+		_queues.clear();
 		for (Priority p : Priority.values())
 		{
-			_queues.put(p, new FIFOQueue(p.name() + " Priority Q"));
+			FIFOQueue queue = new FIFOQueue(p.name() + " Priority Q"); 
+			_queues.put(p, queue);
+			_stats.addQueueStatistics(p, queue.getStatistics());
 		}	
 	}
 	
@@ -194,12 +197,8 @@ public class ServerImpl implements Server
 		}
 		Priority p = job.getPriority();
 		FIFOQueue queue = _queues.get(p);
-		synchronized (queue)
-		{
-			queue.put(job);
-			_location.debug("Received job was added to queue: " + job);
-		}
-		_stats.jobEnqueued(p);
+		queue.put(job);
+		_location.debug("Received job was added to queue: " + job);
 		_location.exiting("putJob()");
 	}
 	
@@ -208,25 +207,22 @@ public class ServerImpl implements Server
 		_location.entering("reenterJob(job)", job);
 		Priority p = job.getPriority();
 		FIFOQueue queue = _queues.get(p);
-		synchronized (queue)
+		switch (getPolicy().getLPJobReEnter())
 		{
-			switch (getPolicy().getLPJobReEnter())
-			{
-				case First:
-					queue.putFirst(job);
-					System.out.println("Reenter job to be first: " + job);
-					_location.debug("Reenter job to be first: " + job);
-					break;
-				case Last:
-					queue.put(job);
-					System.out.println("Reenter job to be last: " + job);
-					_location.debug("Reenter job to be last: " + job);
-					break;
-				case No:
-					System.out.println("Job will not be reentered: " + job);
-					_location.debug("Job will not be reentered: " + job);
-					break;
-			}
+			case First:
+				queue.putFirst(job);
+				System.out.println("Reenter job to be first: " + job);
+				_location.debug("Reenter job to be first: " + job);
+				break;
+			case Last:
+				queue.putLast(job);
+				System.out.println("Reenter job to be last: " + job);
+				_location.debug("Reenter job to be last: " + job);
+				break;
+			case No:
+				System.out.println("Job will not be reentered: " + job);
+				_location.debug("Job will not be reentered: " + job);
+				break;
 		}
 		_location.exiting("reenterJob(job)");
 	}
@@ -235,6 +231,7 @@ public class ServerImpl implements Server
 	public synchronized void reset()
 	{
 		_location.entering("reset()");
+		System.out.println(_stats);
 		_executor.stopExecutor();
 		initQueues();
 		initStatistics();
@@ -275,6 +272,12 @@ public class ServerImpl implements Server
 	{
 		return _stats;
 	}
+	
+	
+	protected ServerStatistics getStatisticsIngternal()
+	{
+		return _stats;
+	} 
 
 	
 	@Override
