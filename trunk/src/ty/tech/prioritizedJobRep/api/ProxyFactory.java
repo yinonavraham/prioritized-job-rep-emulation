@@ -25,7 +25,6 @@ public class ProxyFactory
 	 * @throws RemoteException
 	 * @throws NotBoundException
 	 */
-	@Deprecated
 	public static Server createServerProxy(String host, int port) throws AccessException, RemoteException, NotBoundException
 	{
 		Registry registry = LocateRegistry.getRegistry(host, port);
@@ -57,7 +56,6 @@ public class ProxyFactory
 	 * @throws RemoteException
 	 * @throws NotBoundException
 	 */
-	@Deprecated
 	public static Dispatcher createDispatcherProxy(String host, int port) throws AccessException, RemoteException, NotBoundException
 	{
 		Registry registry = LocateRegistry.getRegistry(host, port);
