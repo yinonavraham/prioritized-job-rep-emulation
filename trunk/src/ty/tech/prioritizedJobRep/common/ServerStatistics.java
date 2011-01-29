@@ -16,19 +16,14 @@ public class ServerStatistics implements Serializable
 	private long _endTime;
 	// Last operation time
 	private long _executionLastOpTime;
-	private Map<Priority, Long> _queueLastOpTime = new HashMap<Priority, Long>();
 	// Counters
-	private Map<Priority, Long> _jobsTotalCount = new HashMap<Priority, Long>();
 	private Map<Priority, Long> _jobsAbortedCount = new HashMap<Priority, Long>();
 	private Map<Priority, Long> _jobsFinishedCount = new HashMap<Priority, Long>();
-	private Map<Priority, Long> _jobsInQueueCount = new HashMap<Priority, Long>();
-	private Map<Priority, Long> _maxQueueLength = new HashMap<Priority, Long>();
+	private Map<Priority, QueueStatistics> _queueStatistics = new HashMap<Priority, QueueStatistics>();
 	// Time accumulators
 	private long _idleTotalTime;
 	private Map<Priority, Long> _executionTotalTime = new HashMap<Priority, Long>();
 	private Map<Priority, Long> _queueTotalTime = new HashMap<Priority, Long>();
-	// Averages
-	private Map<Priority, Double> _queueAvgLength = new HashMap<Priority, Double>();
 
 	
 	public ServerStatistics(EndPoint serverEndPoint)
@@ -45,16 +40,19 @@ public class ServerStatistics implements Serializable
 		_jobPriorityExecuted = null;
 		initCounts();
 		initTimes();
-		initAverages();
+		initQueueStats();
 	}
-	
-	
-	private void initAverages()
+
+
+	private void initQueueStats()
 	{
-		for (Priority priority : Priority.values())
-		{
-			_queueAvgLength.put(priority, 0.0);
-		}
+		_queueStatistics.clear();
+	}
+
+
+	public void addQueueStatistics(Priority priority, QueueStatistics stats)
+	{
+		_queueStatistics.put(priority, stats);
 	}
 
 
@@ -63,11 +61,8 @@ public class ServerStatistics implements Serializable
 		_idleTotalTime = 0;
 		for (Priority priority : Priority.values())
 		{
-			_jobsTotalCount.put(priority, 0L);
 			_jobsAbortedCount.put(priority, 0L);
 			_jobsFinishedCount.put(priority, 0L);
-			_jobsInQueueCount.put(priority, 0L);
-			_maxQueueLength.put(priority, 0L);
 		}
 	}
 
@@ -80,7 +75,6 @@ public class ServerStatistics implements Serializable
 		_executionLastOpTime = currTime;
 		for (Priority priority : Priority.values())
 		{
-			_queueLastOpTime.put(priority, currTime);
 			_executionTotalTime.put(priority, 0L);
 			_queueTotalTime.put(priority, 0L);
 		}	
@@ -95,14 +89,14 @@ public class ServerStatistics implements Serializable
 	
 	public synchronized double getAvgQueueLength(Priority jobPriority)
 	{
-		return _queueAvgLength.get(jobPriority);
+		return _queueStatistics.get(jobPriority).getAvgLength();
 	}
 	
 	
 	public synchronized double getAvgExecutionTime(Priority jobPriority)
 	{
 		long endTime = _endTime > 0 ? _endTime : new Date().getTime();
-		return (double)_executionTotalTime.get(jobPriority) / (double)endTime;
+		return (double)_executionTotalTime.get(jobPriority) / (double)(endTime - _startTime);
 	}
 	
 	
@@ -113,10 +107,11 @@ public class ServerStatistics implements Serializable
 		{
 			for (Priority priority : Priority.values())
 			{
-				max = max < _maxQueueLength.get(priority) ? _maxQueueLength.get(priority) : max;
+				long qMax = _queueStatistics.get(priority).getMaxLength();
+				max = max < qMax ? qMax : max;
 			}
 		}
-		else max = _maxQueueLength.get(jobPriority);
+		else max = _queueStatistics.get(jobPriority).getMaxLength();
 		return max;
 	}
 	
@@ -128,10 +123,10 @@ public class ServerStatistics implements Serializable
 		{
 			for (Priority priority : Priority.values())
 			{
-				count += _jobsInQueueCount.get(priority);
+				count += _queueStatistics.get(priority).getCurrentLength();
 			}
 		}
-		else count = _jobsInQueueCount.get(jobPriority);
+		else count = _queueStatistics.get(jobPriority).getCurrentLength();
 		return count;
 	}
 	
@@ -173,10 +168,10 @@ public class ServerStatistics implements Serializable
 		{
 			for (Priority priority : Priority.values())
 			{
-				count += _jobsTotalCount.get(priority);
+				count += _queueStatistics.get(priority).getTotalJobsCount();
 			}
 		}
-		else count = _jobsTotalCount.get(jobPriority);
+		else count = _queueStatistics.get(jobPriority).getTotalJobsCount();
 		return count;
 	}
 	
@@ -191,43 +186,6 @@ public class ServerStatistics implements Serializable
 	{
 		long endTime = _endTime > 0 ? _endTime : new Date().getTime();
 		return (double)_idleTotalTime / (double)endTime;
-	}
-	
-	
-	private void updateAvgQueueLength(Priority jobPriority, long currLength)
-	{
-		long currTime = new Date().getTime();
-		long lastOpTime = _queueLastOpTime.get(jobPriority);
-		long timespan = currTime - lastOpTime;
-		double avgLength = _queueAvgLength.get(jobPriority);
-		avgLength = (avgLength * (lastOpTime - _startTime) + timespan * currLength) / (currTime - _startTime);
-		_queueAvgLength.put(jobPriority,avgLength);
-		_queueLastOpTime.put(jobPriority,currTime);
-	}
-	
-	
-	public synchronized void jobEnqueued(Priority jobPriority)
-	{
-		// Update the average queue length
-		long currLength = _jobsInQueueCount.get(jobPriority);
-		updateAvgQueueLength(jobPriority, currLength);
-		// Update the current queue length
-		currLength++;
-		_jobsInQueueCount.put(jobPriority,currLength);
-		// Update the max queue length
-		long max = _maxQueueLength.get(jobPriority);
-		_maxQueueLength.put(jobPriority, currLength > max ? currLength : max);
-	}
-	
-	
-	public synchronized void jobDequeued(Priority jobPriority)
-	{
-		// Update the average queue length
-		long currLength = _jobsInQueueCount.get(jobPriority);
-		updateAvgQueueLength(jobPriority, currLength);
-		// Update the current queue length
-		currLength--;
-		_jobsInQueueCount.put(jobPriority,currLength);
 	}
 	
 	
@@ -290,5 +248,33 @@ public class ServerStatistics implements Serializable
 	public synchronized void reset()
 	{
 		init();
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("Server: " + getServerID() + "\n");
+		for (Priority p : Priority.values())
+		{
+			sb.append("Priority: " + p + "\n");
+			sb.append("\tAverage Execution Time: " + getAvgExecutionTime(p) + "\n");
+			sb.append("\tAverage Queue Length:   " + getAvgQueueLength(p) + "\n");
+			sb.append("\tJobs Aborted Count:     " + getJobsAbortedCount(p) + "\n");
+			sb.append("\tJobs Finished Count:    " + getJobsFinishedCount(p) + "\n");
+			sb.append("\tJobs In Queue Count:    " + getJobsInQueueCount(p) + "\n");
+			sb.append("\tJobs Total Count:       " + getJobsTotalCount(p) + "\n");
+			sb.append("\tMax Queue Length:       " + getMaxQueueLength(p) + "\n");
+		}
+		sb.append("Total for server: \n");
+		sb.append("\tJobs Aborted Count:     " + getJobsAbortedCount(null) + "\n");
+		sb.append("\tJobs Finished Count:    " + getJobsFinishedCount(null) + "\n");
+		sb.append("\tJobs In Queue Count:    " + getJobsInQueueCount(null) + "\n");
+		sb.append("\tJobs Total Count:       " + getJobsTotalCount(null) + "\n");
+		sb.append("\tMax Queue Length:       " + getMaxQueueLength(null) + "\n");
+		sb.append("\tAverage Idle Time: " + getAvgIdleTime() + "\n");
+		sb.append("\tTotal Idle Time:   " + getTotalIdleTime() + "\n");
+		return sb.toString();
 	}
 }

@@ -21,6 +21,7 @@ public class Executor extends Thread implements FIFOQueueListener
 	private ServerImpl _server;
 	private Object _lockJob = new Object();
 	
+	
 	public Executor(ServerImpl server)
 	{
 		_server = server;
@@ -32,6 +33,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		}
 	}
 	
+	
 	public synchronized void abortJob()
 	{
 		_location.entering("abortJob()");
@@ -41,6 +43,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		System.out.println("Current job aborted: " + currJob);
 		_location.exiting("abortJob()");
 	}
+	
 	
 	public synchronized boolean abortJob(Job job)
 	{
@@ -59,6 +62,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		return aborted;
 	}
 	
+	
 	public boolean isCurrentJob(Job job)
 	{
 		synchronized (_lockJob)
@@ -66,6 +70,7 @@ public class Executor extends Thread implements FIFOQueueListener
 			return _currJob != null && _currJob.equals(job);
 		}
 	}
+	
 	
 	public Job getCurrentJob()
 	{
@@ -75,6 +80,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		}
 	}
 	
+	
 	private void setCurrentJob(Job job)
 	{
 		synchronized (_lockJob)
@@ -82,6 +88,7 @@ public class Executor extends Thread implements FIFOQueueListener
 			_currJob = job;
 		}
 	}
+	
 	
 	public synchronized void stopExecutor()
 	{
@@ -92,6 +99,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		this.notifyAll();
 		_location.exiting("stopExecutor()");
 	}
+	
 	
 	@Override
 	public void run()
@@ -129,12 +137,14 @@ public class Executor extends Thread implements FIFOQueueListener
 		
 		_location.exiting("run()");
 	}
+	
 
 	private void processCurrentJob()
 	{
 		_location.entering("processCurrentJob()", _currJob);
 		System.out.println("Processing job: " + _currJob);
 		notifySiblings(new JobNotification(_currJob,Type.Started));
+		_server.getStatisticsIngternal().jobExecutionStarted(_currJob.getPriority());
 		long time = 0;
 		long execTime = _currJob.getExecutionTime();
 		while (!_abortJob && time < execTime)
@@ -153,15 +163,18 @@ public class Executor extends Thread implements FIFOQueueListener
 		{
 			System.out.println("Finished job: " + _currJob);
 			notifySiblings(new JobNotification(_currJob,Type.Finished));
+			_server.getStatisticsIngternal().jobExecutionFinished(_currJob.getPriority());
 		}
 		else 
 		{
 			System.out.println("Job execution aborted: " + _currJob);
 			notifySiblings(new JobNotification(_currJob,Type.Aborted));
+			_server.getStatisticsIngternal().jobExecutionAborted(_currJob.getPriority());
 		}
 		_location.exiting("processCurrentJob()");
 	}
 
+	
 	private void notifySiblings(final JobNotification notification)
 	{
 		_location.entering("notifySiblings(notification)", notification);
@@ -193,6 +206,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		t.start();
 		_location.exiting("notifySiblings(notification)");
 	}
+	
 
 	@Override
 	public void processFIFOQueueNotification(FIFOQueueNotification notification)
