@@ -64,12 +64,12 @@ public interface Server extends Remote
 	/**
 	 * Indicates that the server is still running
 	 */
-	boolean ping();
+	boolean ping() throws RemoteException;
 	
 	/**
-	 * Tell the server that a sibling of one of his jobs has started
-	 * @param job - The job that started
+	 * Process a notification from a job
+	 * @param notification - The notification to process
 	 * @throws RemoteException
 	 */
-	void jobSiblingStarted(Job job) throws RemoteException;
+	void processSiblingNotification(JobNotification notification) throws RemoteException;
 }
