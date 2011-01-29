@@ -73,7 +73,9 @@ public class JobSenderThread extends Thread
 			    // send the jobs and move the original one to the inProcessQueue
 			    try 
 			    {
+			    	hpJob.addSiblingLocation(servers.get(idx2).getEndPoint());
 					servers.get(idx1).putJob(hpJob);
+			    	lpJob.addSiblingLocation(servers.get(idx1).getEndPoint());
 					servers.get(idx2).putJob(lpJob);
 					DispatcherImpl.getInProgressJobsQueue().add(job);
 			    }
