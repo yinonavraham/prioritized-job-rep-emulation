@@ -2,13 +2,21 @@ package ty.tech.prioritizedJobRep.server;
 
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.rmi.AccessException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
+import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.FIFOQueue;
 import ty.tech.prioritizedJobRep.common.Job;
 import ty.tech.prioritizedJobRep.common.Priority;
+import ty.tech.prioritizedJobRep.common.ServerStatistics;
+import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
 import ty.tech.prioritizedJobRep.logging.Location;
 import ty.tech.prioritizedJobRep.logging.Logger;
 
@@ -20,6 +28,8 @@ public class ServerImpl implements Server
 	private Map<Priority,FIFOQueue> _queues = new HashMap<Priority, FIFOQueue>();
 	private ServerPolicy _policy;
 	private Executor _executor;
+	private ServerStatistics _stats;
+	private List<Job> _jobsToAbort = new LinkedList<Job>();
 	private Location _location = Logger.getLocation(this.getClass());
 	
 	public ServerImpl(int port) throws SocketException, UnknownHostException
@@ -27,9 +37,20 @@ public class ServerImpl implements Server
 		_endPoint = new EndPoint(port);
 		_policy = new ServerPolicy();
 		initQueues();
-		_executor = new Executor(this);
+		initStatistics();
+		initExecutor();
 	}
 	
+	private void initExecutor()
+	{
+		_executor = new Executor(this);
+	}
+
+	private void initStatistics()
+	{
+		_stats = new ServerStatistics(_endPoint);
+	}
+
 	private void initQueues()
 	{
 		for (Priority p : Priority.values())
@@ -68,11 +89,29 @@ public class ServerImpl implements Server
 	}
 	
 	@Override
-	public void register(String host, int port)
+	public void register(String host, int port) throws RemoteException
 	{
 		_location.entering("register(host, port)",host,port);
-		// TODO: register the server in the dispatcher
-		System.err.println("register is not implemented yet");
+		try
+		{
+			Dispatcher dispatcher = ProxyFactory.createDispatcherProxy(host, port);
+			dispatcher.registerServer(_endPoint);
+		}
+		catch (AccessException e)
+		{
+			_location.throwing("register(host, port)", e);
+			throw new RemoteException("Failed to register to dispatcher. Reason: " + e.getMessage(), e);
+		}
+		catch (RemoteException e)
+		{
+			_location.throwing("register(host, port)", e);
+			throw e;
+		}
+		catch (NotBoundException e)
+		{
+			_location.throwing("register(host, port)", e);
+			throw new RemoteException("Failed to register to dispatcher. Reason: " + e.getMessage(), e);
+		}
 		_location.exiting("register()");
 	}
 
@@ -104,7 +143,14 @@ public class ServerImpl implements Server
 		_location.entering("putJob(job)",job);
 		Priority p = job.getPriority();
 		FIFOQueue queue = _queues.get(p);
-		queue.put(job);
+		synchronized (queue)
+		{
+			queue.put(job);
+		}
+		synchronized (_stats)
+		{
+			_stats.jobEnqueued(p);
+		}
 		_location.exiting("putJob()");
 	}
 
@@ -112,7 +158,11 @@ public class ServerImpl implements Server
 	public synchronized void reset()
 	{
 		_location.entering("reset()");
-		System.err.println("reset is not implemented yet");
+		_executor.stopExecutor();
+		initQueues();
+		initStatistics();
+		initExecutor();
+		_executor.start();
 		_location.exiting("reset()");
 	}
 
@@ -141,6 +191,34 @@ public class ServerImpl implements Server
 		_finished = true;
 		Thread.currentThread().interrupt();
 		_location.exiting("stop()");
+	}
+
+	@Override
+	public ServerStatistics getStatistics() throws RemoteException
+	{
+		return _stats;
+	}
+
+	@Override
+	public void jobSiblingStarted(Job job) throws RemoteException
+	{
+		_location.entering("jobSiblingStarted(job)", job);
+		Priority p = job.getPriority();
+		// If the job that started is the HP sibling
+		if (Priority.High.equals(p))
+		{
+			// Add the job to the list of sibling jobs that started
+			synchronized (_jobsToAbort)
+			{
+				_jobsToAbort.add(job);
+			}
+			// If the job is in the queue
+			FIFOQueue queue = _queues.get(p);
+			synchronized (queue)
+			{
+			}
+		}
+		_location.exiting("jobSiblingStarted(job)");
 	}
 
 }

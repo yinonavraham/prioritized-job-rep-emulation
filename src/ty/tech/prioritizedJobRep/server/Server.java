@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 
 import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.Job;
+import ty.tech.prioritizedJobRep.common.ServerStatistics;
 
 
 public interface Server extends Remote
@@ -53,8 +54,22 @@ public interface Server extends Remote
 	 */
 	void setPolicy(ServerPolicy policy) throws RemoteException;
 	
+	
+	/**
+	 * @return The statistics collected in the server
+	 * @throws RemoteException
+	 */
+	ServerStatistics getStatistics() throws RemoteException;
+	
 	/**
 	 * Indicates that the server is still running
 	 */
 	boolean ping();
+	
+	/**
+	 * Tell the server that a sibling of one of his jobs has started
+	 * @param job - The job that started
+	 * @throws RemoteException
+	 */
+	void jobSiblingStarted(Job job) throws RemoteException;
 }
