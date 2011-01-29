@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
+import ty.tech.prioritizedJobRep.client.Client;
 import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.Entities;
 import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
@@ -76,5 +77,20 @@ public class ProxyFactory
 	{
 		Registry registry = LocateRegistry.getRegistry(ep.getHostAddress(), ep.getPort());
 		return (Dispatcher)registry.lookup(Entities.DISPATCHER);
+	}
+	
+
+	/**
+	 * Create a proxy for a client 
+	 * @param ep - the end point of the client
+	 * @return a proxy to the client
+	 * @throws AccessException
+	 * @throws RemoteException
+	 * @throws NotBoundException
+	 */
+	public static Client createClientProxy(EndPoint ep) throws AccessException, RemoteException, NotBoundException
+	{
+		Registry registry = LocateRegistry.getRegistry(ep.getHostAddress(), ep.getPort());
+		return (Client)registry.lookup(Entities.CLIENT);
 	}
 }
