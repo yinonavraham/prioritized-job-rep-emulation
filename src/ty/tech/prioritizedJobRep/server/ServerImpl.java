@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,7 +30,7 @@ public class ServerImpl implements Server
 	private ServerPolicy _policy;
 	private Executor _executor;
 	private ServerStatistics _stats;
-	private List<Job> _jobsToAbort = new LinkedList<Job>();
+	private Map<Job,Long> _jobsToAbort = new HashMap<Job,Long>();
 	private Location _location = Logger.getLocation(this.getClass());
 	
 	public ServerImpl(int port) throws SocketException, UnknownHostException
@@ -39,8 +40,48 @@ public class ServerImpl implements Server
 		initQueues();
 		initStatistics();
 		initExecutor();
+		startJobsToAbortCleanerDaemon();
 	}
 	
+	private void startJobsToAbortCleanerDaemon()
+	{
+		Thread t = new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				final long timeout = 10000;
+				while (true)
+				{
+					try { Thread.sleep(10000); } catch (InterruptedException e) {}
+					_location.debug("JobsToAbortCleaner: Started iteration");
+					long currTime = new Date().getTime();
+					synchronized (_jobsToAbort)
+					{
+						List<Job> jobs = new LinkedList<Job>();
+						for (Job job : _jobsToAbort.keySet())
+						{
+							Long time = _jobsToAbort.get(job);
+							if (time == null || currTime - time > timeout)
+							{
+								jobs.add(job);		
+							}
+						}
+						for (Job job : jobs)
+						{
+							_location.debug("JobsToAbortCleaner: Remove job " + job);
+							_jobsToAbort.remove(job);
+						}
+					}
+					_location.debug("JobsToAbortCleaner: Finished iteration");
+				}
+			}
+		});
+		t.setDaemon(true);
+		t.setName("JobsToAbortCleanerDaemon");
+		t.start();
+	}
+
 	private void initExecutor()
 	{
 		_executor = new Executor(this);
@@ -141,17 +182,53 @@ public class ServerImpl implements Server
 	public void putJob(Job job)
 	{
 		_location.entering("putJob(job)",job);
+		synchronized (_jobsToAbort)
+		{
+			if (_jobsToAbort.containsKey(job))
+			{
+				_jobsToAbort.remove(job);
+				_location.debug("Received job was tagged to be aborted: " + job);
+				_location.exiting("putJob()");
+				return;
+			}
+		}
 		Priority p = job.getPriority();
 		FIFOQueue queue = _queues.get(p);
 		synchronized (queue)
 		{
 			queue.put(job);
+			_location.debug("Received job was added to queue: " + job);
 		}
-		synchronized (_stats)
-		{
-			_stats.jobEnqueued(p);
-		}
+		_stats.jobEnqueued(p);
 		_location.exiting("putJob()");
+	}
+	
+	protected void reenterJob(Job job)
+	{
+		_location.entering("reenterJob(job)", job);
+		Priority p = job.getPriority();
+		FIFOQueue queue = _queues.get(p);
+		synchronized (queue)
+		{
+			switch (getPolicy().getLPJobReEnter())
+			{
+				case First:
+					queue.putFirst(job);
+					System.out.println("Reenter job to be first: " + job);
+					_location.debug("Reenter job to be first: " + job);
+					break;
+				case Last:
+					queue.put(job);
+					System.out.println("Reenter job to be last: " + job);
+					_location.debug("Reenter job to be last: " + job);
+					break;
+				case No:
+					System.out.println("Job will not be reentered: " + job);
+					_location.debug("Job will not be reentered: " + job);
+					break;
+			}
+		}
+		_location.exiting("reenterJob(job)");
 	}
 
 	@Override
@@ -199,8 +276,26 @@ public class ServerImpl implements Server
 		return _stats;
 	}
 
+	
 	@Override
-	public void jobSiblingStarted(Job job) throws RemoteException
+	public void processSiblingNotification(JobNotification notification) throws RemoteException
+	{
+		_location.entering("processSiblingNotification(notification)", notification);
+		switch (notification.getType())
+		{
+			case Started:
+				jobSiblingStarted(notification.getJob());
+				break;
+			case Finished:
+				jobSiblingFinished(notification.getJob());
+				break;
+			case Aborted:
+				break;
+		}
+		_location.exiting("processSiblingNotification(notification)");
+	}
+	
+	private void jobSiblingStarted(Job job) throws RemoteException
 	{
 		_location.entering("jobSiblingStarted(job)", job);
 		Priority p = job.getPriority();
@@ -210,15 +305,50 @@ public class ServerImpl implements Server
 			// Add the job to the list of sibling jobs that started
 			synchronized (_jobsToAbort)
 			{
-				_jobsToAbort.add(job);
+				_jobsToAbort.put(job,new Date().getTime());
 			}
-			// If the job is in the queue
-			FIFOQueue queue = _queues.get(p);
-			synchronized (queue)
+			// Abort the job's execution if it is the current job
+			if (_executor.abortJob(job))
 			{
+				System.out.println("Job was aborted due to a sibling that started: " + job);
+				synchronized (_jobsToAbort)
+				{
+					_jobsToAbort.remove(job);
+				}
 			}
 		}
 		_location.exiting("jobSiblingStarted(job)");
+	}
+
+	
+	private void jobSiblingFinished(Job job) throws RemoteException
+	{
+		_location.entering("jobSiblingFinished(job)", job);
+//		Priority p = job.getPriority();
+		// Add the job to the list of sibling jobs that need to be aborted
+		synchronized (_jobsToAbort)
+		{
+			_jobsToAbort.put(job,new Date().getTime());
+		}
+		// Abort the job's execution if it is the current job
+		if (_executor.abortJob(job))
+		{
+			System.out.println("Job was aborted due to a sibling that finished: " + job);
+			synchronized (_jobsToAbort)
+			{
+				_jobsToAbort.remove(job);
+			}
+		}
+		_location.exiting("jobSiblingFinished(job)");
+	}
+
+	
+	public boolean isJobMarkedToAbort(Job job)
+	{
+		synchronized (_jobsToAbort)
+		{
+			return _jobsToAbort.containsKey(job);
+		}
 	}
 
 }

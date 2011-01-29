@@ -36,4 +36,11 @@ public class JobNotification implements Serializable
 	{
 		return _type;
 	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "Job " + _job + " " + _type; 
+	}
 }
