@@ -1,5 +1,7 @@
 package ty.tech.prioritizedJobRep.server;
 
+import ty.tech.prioritizedJobRep.api.ProxyFactory;
+import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.FIFOQueue;
 import ty.tech.prioritizedJobRep.common.FIFOQueueListener;
 import ty.tech.prioritizedJobRep.common.FIFOQueueNotification;
@@ -7,6 +9,7 @@ import ty.tech.prioritizedJobRep.common.Job;
 import ty.tech.prioritizedJobRep.common.Priority;
 import ty.tech.prioritizedJobRep.logging.Location;
 import ty.tech.prioritizedJobRep.logging.Logger;
+import ty.tech.prioritizedJobRep.server.JobNotification.Type;
 
 
 public class Executor extends Thread implements FIFOQueueListener
@@ -32,24 +35,28 @@ public class Executor extends Thread implements FIFOQueueListener
 	public synchronized void abortJob()
 	{
 		_location.entering("abortJob()");
-		System.out.println("Aborting current job...");
+		Job currJob = _currJob;
 		_abortJob = true;
 		this.interrupt();
-		System.out.println("Current job aborted");
+		System.out.println("Current job aborted: " + currJob);
 		_location.exiting("abortJob()");
 	}
 	
-	public synchronized void abortJob(Job job)
+	public synchronized boolean abortJob(Job job)
 	{
 		_location.entering("abortJob(job)",job);
+		boolean aborted = false;
 		synchronized (_lockJob)
 		{
 			if (isCurrentJob(job))
 			{
 				abortJob();
+				aborted = true;
 			}
+			
 		}
-		_location.exiting("abortJob()");
+		_location.exiting("abortJob()",aborted);
+		return aborted;
 	}
 	
 	public boolean isCurrentJob(Job job)
@@ -97,17 +104,25 @@ public class Executor extends Thread implements FIFOQueueListener
 		{
 			if (!hpQueue.isEmpty())
 			{
-				setCurrentJob(hpQueue.pop());
-				_abortJob = false;
-				// TODO: Notify LP job
-				processCurrentJob();
+				Job job = hpQueue.pop();
+				if (!_server.isJobMarkedToAbort(job))
+				{
+					setCurrentJob(job);
+					_abortJob = false;
+					processCurrentJob();
+				}
+				else System.out.println("Job was marked to be aborted: " + job);
 			}
 			else if (!lpQueue.isEmpty())
 			{
-				setCurrentJob(lpQueue.pop());
-				_abortJob = false;
-				processCurrentJob();
-				// TODO: Notify HP job
+				Job job = lpQueue.pop();
+				if (!_server.isJobMarkedToAbort(job))
+				{
+					setCurrentJob(job);
+					_abortJob = false;
+					processCurrentJob();
+				}
+				else System.out.println("Job was marked to be aborted: " + job);
 			}
 			try { sleep(1); } catch (InterruptedException e) {}
 		}
@@ -119,6 +134,7 @@ public class Executor extends Thread implements FIFOQueueListener
 	{
 		_location.entering("processCurrentJob()", _currJob);
 		System.out.println("Processing job: " + _currJob);
+		notifySiblings(new JobNotification(_currJob,Type.Started));
 		long time = 0;
 		long execTime = _currJob.getExecutionTime();
 		while (!_abortJob && time < execTime)
@@ -133,9 +149,49 @@ public class Executor extends Thread implements FIFOQueueListener
 			}
 			time += 10;
 		}
-		if (!_abortJob) System.out.println("Finished job: " + _currJob);
-		else System.out.println("Job aborted: " + _currJob);
+		if (!_abortJob) 
+		{
+			System.out.println("Finished job: " + _currJob);
+			notifySiblings(new JobNotification(_currJob,Type.Finished));
+		}
+		else 
+		{
+			System.out.println("Job execution aborted: " + _currJob);
+			notifySiblings(new JobNotification(_currJob,Type.Aborted));
+		}
 		_location.exiting("processCurrentJob()");
+	}
+
+	private void notifySiblings(final JobNotification notification)
+	{
+		_location.entering("notifySiblings(notification)", notification);
+		Thread t = new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				for (EndPoint ep : notification.getJob().getSiblingsLocations())
+				{
+					try
+					{
+						Server server = ProxyFactory.createServerProxy(ep);
+						server.processSiblingNotification(notification);
+						server = null;
+					}
+					catch (Exception e)
+					{
+						System.err.println(
+							"Failed to notify to job's sibling on: " + ep 
+							+ ". Reason: " + e.getMessage());
+						_location.throwing("notifySiblings(JobNotification)", e);
+					}
+				}
+			}
+		});
+		t.setDaemon(true);
+		t.setName("SiblingsNotificationDispatcher");
+		t.start();
+		_location.exiting("notifySiblings(notification)");
 	}
 
 	@Override
@@ -154,6 +210,8 @@ public class Executor extends Thread implements FIFOQueueListener
 				Priority.High.equals(peek == null ? null : peek.getPriority()))
 			{
 				abortJob();
+				// Reenter the aborted job
+				_server.reenterJob(currJob);
 			}
 		}
 		_location.exiting("processFIFOQueueNotification(FIFOQueueNotification)");
