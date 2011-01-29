@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class Job implements Serializable
+public class Job implements Serializable, Cloneable
 {
 	private static final long serialVersionUID = -7178564194342696938L;
 
@@ -131,5 +131,12 @@ public class Job implements Serializable
 	public int hashCode()
 	{
 		return _id.hashCode();
+	}
+	
+	
+	@Override
+	protected Object clone() throws CloneNotSupportedException
+	{
+		return new Job(getID(),getExecutionTime());
 	}
 }
