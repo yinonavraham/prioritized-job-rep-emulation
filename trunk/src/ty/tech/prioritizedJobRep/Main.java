@@ -91,8 +91,7 @@ public class Main
 		int targetPort = cmdArgs.getTargetPort();
 		System.out.println("Registering the server in the target dispatcher: " + targetHost + ":" + targetPort);
 		Logger.getLocation(Main.class).debug("Registering the server in the target dispatcher: " + targetHost + ":" + targetPort);
-//		Registry registry = LocateRegistry.getRegistry(port);
-//		Server server = (Server)registry.lookup(Entities.SERVER);
+
 		Server server = ProxyFactory.createServerProxy("localhost", port);
 		server.register(targetHost, targetPort);
 		System.out.println("Server was registered successfully.");
@@ -101,9 +100,20 @@ public class Main
 		Logger.getLocation(Main.class).exiting("registerServer(CommandArguments)");
 	}
 
-	private static void stopDispatcher(CommandArguments cmdArgs)
+	private static void stopDispatcher(CommandArguments cmdArgs) throws RemoteException, NotBoundException
 	{
-		System.err.println("stopDispatcher is not implemented yet");
+		Logger.getLocation(Main.class).entering("stopDispatcher(CommandArguments)", cmdArgs);
+		
+		System.out.println("Stopping dispatcher...");
+		int port = cmdArgs.getPort();
+		System.out.println("Dispatcher listens on port: " + port);
+		Logger.getLocation(Main.class).debug("Stopping dispatcher which listens on port: " + port);
+
+		Dispatcher dispatcher = ProxyFactory.createDispatcherProxy("localhost", port);
+		dispatcher.stop();
+		Logger.getLocation(Main.class).debug("Server stopped.");
+		
+		Logger.getLocation(Main.class).exiting("stopDispatcher(CommandArguments)");		
 	}
 
 	private static void stopServer(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException
@@ -114,8 +124,7 @@ public class Main
 		int port = cmdArgs.getPort();
 		System.out.println("Server listens on port: " + port);
 		Logger.getLocation(Main.class).debug("Stopping server which listens on port: " + port);
-//		Registry registry = LocateRegistry.getRegistry(port);
-//		Server server = (Server)registry.lookup(Entities.SERVER);
+
 		Server server = ProxyFactory.createServerProxy("localhost", port);
 		server.stop();
 		Logger.getLocation(Main.class).debug("Server stopped.");
@@ -125,20 +134,17 @@ public class Main
 
 	private static void startClient(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException, InterruptedException, SocketException, UnknownHostException
 	{
-		System.err.println("startClient currently in implementation");
-		
 		Logger.getLocation(Main.class).entering("startClient(CommandArguments)", cmdArgs);
 		
 		System.out.println("Starting client on local host.");
 		String targetHost = cmdArgs.getTargetHost();
 		int targetPort = cmdArgs.getTargetPort();
 		int duration = cmdArgs.getDuration();
-		int jobLength = cmdArgs.getJobLength();
+		int jobLength = cmdArgs.getJobLength() * 1000 ; // in milliseconds
 		ArrayList<Integer> loads = cmdArgs.getLoads();
 		
 		System.out.println("Client will work with dispatcher on " + targetHost + ":" + targetPort);
 		Logger.getLocation(Main.class).debug("Starting client with dispatcher on " + targetHost + ":" + targetPort);
-		
 		
 		// Create the server object 
 		EndPoint endPoint = new EndPoint(targetHost, targetPort);
@@ -148,8 +154,6 @@ public class Main
 
 	private static void startDispatcher(CommandArguments cmdArgs) throws RemoteException, SocketException, UnknownHostException, AlreadyBoundException, NotBoundException
 	{
-		System.err.println("startDispatcher is being implemented");
-		
 		Logger.getLocation(Main.class).entering("startDispatcher(CommandArguments)", cmdArgs);
 		
 		System.out.println("Starting dispatcher on local host.");
@@ -165,14 +169,12 @@ public class Main
 		registry.bind(Entities.DISPATCHER, dispatcher);
 		System.out.println("Dispatcher is running.");
 		Logger.getLocation(Main.class).debug("Dispatcher is running.");
-		dispatcherObj.start();
+		dispatcherObj.start();  // program will remain here until dispatcher is stopped
 
-		/*
 		registry.unbind(Entities.DISPATCHER);
 		UnicastRemoteObject.unexportObject(dispatcherObj, true);
 		System.out.println("Dispatcher is stopped.");
 		Logger.getLocation(Main.class).debug("Dispatcher is stopped.");
-		*/
 		
 		Logger.getLocation(Main.class).exiting("startDispatcher(CommandArguments)");		
 	}
@@ -185,9 +187,9 @@ public class Main
 		int port = cmdArgs.getPort();
 		System.out.println("Server will listen on port: " + port);
 		Logger.getLocation(Main.class).debug("Starting server on port: " + port);
+		
 		// Create the server object 
 		ServerImpl serverObj = new ServerImpl(port);
-		
 		// Cast the server object to a remote object 
 		Server server = (Server) UnicastRemoteObject.exportObject(serverObj, 0);
 		// Bind the remote object's stub in the registry
@@ -195,19 +197,7 @@ public class Main
 		registry.bind(Entities.SERVER, server);
 		System.out.println("Server is running.");
 		Logger.getLocation(Main.class).debug("Server is running.");
-		serverObj.start();
-		
-		if (cmdArgs.containsArg("target"))
-		{
-			String targetHost = cmdArgs.getTargetHost();
-			int targetPort = cmdArgs.getTargetPort();
-			System.out.println("Registering the server in the target dispatcher: " + targetHost + ":" + targetPort);
-			Logger.getLocation(Main.class).debug("Registering the server in the target dispatcher: " + targetHost + ":" + targetPort);
-			serverObj.register(targetHost, targetPort);
-			System.out.println("Server was registered successfully.");
-			Logger.getLocation(Main.class).debug("Server was registered successfully.");
-		}
-
+		serverObj.start(); // program will remain here until server is stopped
 		
 		registry.unbind(Entities.SERVER);
 		UnicastRemoteObject.unexportObject(serverObj, true);
