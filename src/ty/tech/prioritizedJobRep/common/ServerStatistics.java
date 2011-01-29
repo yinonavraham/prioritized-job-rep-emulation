@@ -67,6 +67,7 @@ public class ServerStatistics implements Serializable
 			_jobsAbortedCount.put(priority, 0L);
 			_jobsFinishedCount.put(priority, 0L);
 			_jobsInQueueCount.put(priority, 0L);
+			_maxQueueLength.put(priority, 0L);
 		}
 	}
 
