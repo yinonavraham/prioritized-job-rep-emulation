@@ -51,7 +51,7 @@ public class JobsGeneratorThread extends Thread
 			} 
 			catch (InterruptedException e) 
 			{
-				System.err.println("Error occured in JobsGeneratorThread sleep: " + e.getMessage());
+				System.err.println("Client.JobsGeneratorThread stopped");
 			}
 			
 			_jobId++;
@@ -60,6 +60,7 @@ public class JobsGeneratorThread extends Thread
 			currentTime = System.currentTimeMillis();
 		} while (_duration > (currentTime - startTime));
 		
+		//keep the last jobId
 		_threadProps.put("lastJobId", _jobId);
     }
     

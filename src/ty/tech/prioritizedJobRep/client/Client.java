@@ -2,12 +2,12 @@ package ty.tech.prioritizedJobRep.client;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.ArrayList;
 
+import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.common.EndPoint;
-import ty.tech.prioritizedJobRep.common.Entities;
+import ty.tech.prioritizedJobRep.common.JobResult;
+import ty.tech.prioritizedJobRep.common.ServerStatistics;
 import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
 import ty.tech.prioritizedJobRep.logging.Logger;
 
@@ -28,16 +28,17 @@ public class Client
 	
 	private void registerAtDispatcher(EndPoint endPoint) throws RemoteException, NotBoundException
 	{
-        Registry registry = LocateRegistry.getRegistry(endPoint.getHostAddress());
-        _dispatcher = (Dispatcher) registry.lookup(Entities.DISPATCHER);		
+       _dispatcher = ProxyFactory.createDispatcherProxy(endPoint);
+       String msg = "Client registered to dispatcher " + endPoint.getHostName() + ":" + endPoint.getPort();
+       System.out.println(msg);
+       Logger.getLocation(Client.class).debug(msg);       
 	}
 	
 	public void start() throws InterruptedException
 	{
 		Logger.getLocation(Client.class).entering("start()");
+		
 		int jobId = 0;
-		//TODO: start the dispatcher
-		Logger.getLocation(Client.class).debug("Client registered to dispatcher");
 		
 		// the number of loads defines the number of iterations
 		for (int numIter = 0; numIter < _loads.size(); ++numIter)  
@@ -47,8 +48,23 @@ public class Client
 			
 			JobsGeneratorThread thread = new JobsGeneratorThread(jobId,_duration, _jobLength, _loads.get(numIter), _dispatcher);
 			thread.start();
-			thread.join(); // wait for all iteration to finish
+			thread.join(); // wait for iteration to finish
 			jobId = thread.getLastJobId();
+			
+			// get statistics, jobs results and reset all servers
+			try 
+			{
+				//TODO: process statistics and job results
+				ArrayList<ServerStatistics> serversStatistics = _dispatcher.getServersStatistics();
+				ArrayList<JobResult> jobsResults = _dispatcher.getJobsResults();
+				_dispatcher.resetAllServers();
+			} 
+			catch (RemoteException e) 
+			{
+				System.err.println("Error occured in JobsGeneratorThread.resetAllServers(): " + e.getMessage());
+			}			
+
+			// stop Client
 			thread.interrupt();
 		}
 
@@ -57,5 +73,4 @@ public class Client
 		
 		Logger.getLocation(Client.class).exiting("start()");
 	}
-
 }
