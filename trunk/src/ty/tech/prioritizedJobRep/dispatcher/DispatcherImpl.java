@@ -18,6 +18,7 @@ import ty.tech.prioritizedJobRep.server.Server;
 
 public class DispatcherImpl implements Dispatcher
 {
+	private EndPoint _endPoint;
 	private static ArrayList<Server> _activeServers;
 	private static ArrayList<Job> _inProgressJobsQueue;
 	private static ArrayList<JobResult> _jobsResults;
@@ -29,7 +30,9 @@ public class DispatcherImpl implements Dispatcher
 	
 	public DispatcherImpl(int port) throws SocketException, UnknownHostException
 	{
+		_endPoint = new EndPoint(port);
 		_activeServers = new ArrayList<Server>();
+		_jobsResults = new ArrayList<JobResult>();
 		_finished = false; 
 		_incomingJobsQueue = new FIFOQueue("Dispatcher's Incoming Jobs Queue");
 		_inProgressJobsQueue = new ArrayList<Job>();
@@ -98,6 +101,7 @@ public class DispatcherImpl implements Dispatcher
 	public synchronized void addJob(Job job)
 	{
 		job.getStatistics().setStartTime();
+		job.setDispatcher(_endPoint);
 		_incomingJobsQueue.put(job);
 		System.out.println("Dispatcher got job " + job.getID());
 	}

@@ -18,11 +18,11 @@ public class NetUtils
 	public static InetAddress detectLocalActiveIP() throws SocketException, UnknownHostException
 	{
 		Location location = Logger.getLocation(NetUtils.class);
+		location.entering("detectLocalActiveIP()");
 		InetAddress serverActiveIP = null;
 		// each server prints all his IP.
 		// This is used so we can collect data about the participating servers
 		// and choose a not-self-loop IP
-		location.entering("detectLocalActiveIP()");//log("Started on (printing all local addresses) ", LM_Logger.SERVER);
 		Enumeration<NetworkInterface> allLocalInterfaces = NetworkInterface.getNetworkInterfaces();
 		location.debug("Started on (printing all local addresses) ");
 		while (allLocalInterfaces.hasMoreElements())
@@ -41,6 +41,7 @@ public class NetUtils
 				location.debug(currAddress.toString());
 			}
 		}
+//		serverActiveIP = InetAddress.getLocalHost();
 		location.exiting("detectLocalActiveIP()", serverActiveIP);
 		return serverActiveIP;
 	}

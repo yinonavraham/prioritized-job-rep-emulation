@@ -31,7 +31,9 @@ public class JobSenderThread extends Thread
 			{
 				//copy the job and set matching priorities
 				hpJob = job.clone(Priority.High);
+				hpJob.setDispatcher(job.getDispatcher());
 				lpJob = job.clone(Priority.Low);
+				lpJob.setDispatcher(job.getDispatcher());
 				
 				// get all available servers
 				ArrayList<Server> servers = DispatcherImpl.getActiveServers();
