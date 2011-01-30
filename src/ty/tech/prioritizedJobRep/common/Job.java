@@ -13,6 +13,7 @@ public class Job implements Serializable
 	private String _id;
 	private Priority _priority = null;
 	private List<EndPoint> _siblingsLocations = new LinkedList<EndPoint>();
+	private EndPoint _dispatcher = null;
 	private JobResult _result = null;
 	private JobStatistics _stats;
 	private boolean _hasSiblingInProcess = false;
@@ -57,6 +58,18 @@ public class Job implements Serializable
 	public void addSiblingsLocations(Collection<? extends EndPoint> siblingsLocations)
 	{
 		_siblingsLocations.addAll(siblingsLocations);
+	}
+	
+	
+	public void setDispatcher(EndPoint ep)
+	{
+		_dispatcher = ep;
+	}
+	
+	
+	public EndPoint getDispatcher()
+	{
+		return _dispatcher;
 	}
 
 	
