@@ -31,7 +31,9 @@ public class ServerImpl implements Server
 	private Executor _executor;
 	private ServerStatistics _stats;
 	private Map<Job,Long> _jobsToAbort = new HashMap<Job,Long>();
+	private JobResultSender _resultSender;
 	private Location _location = Logger.getLocation(this.getClass());
+	
 	
 	public ServerImpl(int port) throws SocketException, UnknownHostException
 	{
@@ -40,9 +42,11 @@ public class ServerImpl implements Server
 		initStatistics();
 		initQueues();
 		initExecutor();
+		initJobResultSender();
 		startJobsToAbortCleanerDaemon();
 	}
 	
+
 	private void startJobsToAbortCleanerDaemon()
 	{
 		Thread t = new Thread(new Runnable()
@@ -81,17 +85,26 @@ public class ServerImpl implements Server
 		t.setName("JobsToAbortCleanerDaemon");
 		t.start();
 	}
+	
+	
+	private void initJobResultSender()
+	{
+		_resultSender = new JobResultSender();
+	}
+	
 
 	private void initExecutor()
 	{
 		_executor = new Executor(this);
 	}
 
+	
 	private void initStatistics()
 	{
 		_stats = new ServerStatistics(_endPoint);
 	}
 
+	
 	private void initQueues()
 	{
 		_queues.clear();
@@ -103,10 +116,12 @@ public class ServerImpl implements Server
 		}	
 	}
 	
+	
 	protected FIFOQueue getQueue(Priority priority)
 	{
 		return _queues.get(priority);
 	}
+	
 	
 	private synchronized boolean isFinished()
 	{
@@ -120,10 +135,12 @@ public class ServerImpl implements Server
 		return _endPoint;
 	}
 	
+	
 	public void start()
 	{
 		_location.entering("start()");
 		_executor.start();
+		_resultSender.start();
 		while (!isFinished())
 		{
 			try { Thread.sleep(2000); }
@@ -131,6 +148,7 @@ public class ServerImpl implements Server
 		}
 		_location.exiting("start()");
 	}
+	
 	
 	@Override
 	public void register(String host, int port) throws RemoteException
@@ -159,6 +177,7 @@ public class ServerImpl implements Server
 		_location.exiting("register()");
 	}
 
+	
 	@Override
 	public void abortJob(Job job)
 	{
@@ -180,6 +199,7 @@ public class ServerImpl implements Server
 		System.out.println("Job aborted: " + job);
 		_location.exiting("abortJob()");
 	}
+	
 
 	@Override
 	public void putJob(Job job)
@@ -201,6 +221,7 @@ public class ServerImpl implements Server
 		_location.debug("Received job was added to queue: " + job);
 		_location.exiting("putJob()");
 	}
+	
 	
 	protected void reenterJob(Job job)
 	{
@@ -227,46 +248,56 @@ public class ServerImpl implements Server
 		_location.exiting("reenterJob(job)");
 	}
 
+	
 	@Override
 	public synchronized void reset()
 	{
 		_location.entering("reset()");
 		System.out.println(_stats);
 		_executor.stopExecutor();
+		_resultSender.stopSender();
 		initQueues();
 		initStatistics();
 		initExecutor();
+		initJobResultSender();
 		_executor.start();
+		_resultSender.start();
 		_location.exiting("reset()");
 	}
 
+	
 	@Override
 	public synchronized void setPolicy(ServerPolicy policy)
 	{
 		_policy = policy;
 	}
 	
+	
 	protected synchronized ServerPolicy getPolicy()
 	{
 		return _policy;
 	}
+	
 	
 	@Override
 	public boolean ping()
 	{
 		return true;
 	}
+	
 
 	@Override
 	public synchronized void stop()
 	{
 		_location.entering("stop()");
 		_executor.stopExecutor();
+		_resultSender.stopSender();
 		_finished = true;
 		Thread.currentThread().interrupt();
 		_location.exiting("stop()");
 	}
 
+	
 	@Override
 	public ServerStatistics getStatistics() throws RemoteException
 	{
@@ -297,6 +328,7 @@ public class ServerImpl implements Server
 		}
 		_location.exiting("processSiblingNotification(notification)");
 	}
+	
 	
 	private void jobSiblingStarted(Job job) throws RemoteException
 	{
@@ -352,6 +384,12 @@ public class ServerImpl implements Server
 		{
 			return _jobsToAbort.containsKey(job);
 		}
+	}
+	
+	
+	protected void sendJobBack(Job job)
+	{
+		_resultSender.putJob(job);
 	}
 
 }

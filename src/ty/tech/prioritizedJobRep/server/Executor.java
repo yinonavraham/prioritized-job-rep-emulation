@@ -162,6 +162,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		if (!_abortJob) 
 		{
 			System.out.println("Finished job: " + _currJob);
+			_server.sendJobBack(_currJob);
 			notifySiblings(new JobNotification(_currJob,Type.Finished));
 			_server.getStatisticsIngternal().jobExecutionFinished(_currJob.getPriority());
 		}
