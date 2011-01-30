@@ -1,7 +1,11 @@
 package ty.tech.prioritizedJobRep.common;
 
-public class JobResult 
+import java.io.Serializable;
+
+public class JobResult implements Serializable
 {
+	private static final long serialVersionUID = -410386454415256326L;
+	
 	private Object _result;
 	private String _jobId;
 	private long _startTime;
