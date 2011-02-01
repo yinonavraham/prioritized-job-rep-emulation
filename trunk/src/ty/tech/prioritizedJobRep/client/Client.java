@@ -1,5 +1,6 @@
 package ty.tech.prioritizedJobRep.client;
 
+import java.io.IOException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.JobResult;
 import ty.tech.prioritizedJobRep.common.ServerStatistics;
+import ty.tech.prioritizedJobRep.common.StatisticsHandler;
 import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
 import ty.tech.prioritizedJobRep.logging.Logger;
 
@@ -34,11 +36,12 @@ public class Client
        Logger.getLocation(Client.class).debug(msg);       
 	}
 	
-	public void start() throws InterruptedException
+	public void start() throws InterruptedException, IOException
 	{
 		Logger.getLocation(Client.class).entering("start()");
 		
 		int jobId = 0;
+		StatisticsHandler statisticsHandler = new StatisticsHandler();
 		
 		// the number of loads defines the number of iterations
 		for (int numIter = 0; numIter < _loads.size(); ++numIter)  
@@ -46,7 +49,7 @@ public class Client
 			System.out.println("starting iteration " + numIter);
 			Logger.getLocation(Client.class).debug("Starting iteration number " + (numIter+1) + ", load is " + _loads.get(numIter));
 			
-			JobsGeneratorThread thread = new JobsGeneratorThread(jobId,_duration, _jobLength, _loads.get(numIter), _dispatcher);
+			JobsGeneratorThread thread = new JobsGeneratorThread(jobId, _duration, _jobLength, _loads.get(numIter), _dispatcher);
 			thread.start();
 			thread.join(); // wait for iteration to finish
 			jobId = thread.getLastJobId();
@@ -54,9 +57,16 @@ public class Client
 			// get statistics, jobs results and reset all servers
 			try 
 			{
-				//TODO: process statistics and job results
 				ArrayList<ServerStatistics> serversStatistics = _dispatcher.getServersStatistics();
 				ArrayList<JobResult> jobsResults = _dispatcher.getJobsResults();
+				if (serversStatistics.size() == 0 ||  jobsResults.size() == 0)
+				{
+					String msg = "In iteration #" + numIter + ", serversStatistics.size()=" + serversStatistics.size() 
+					+ " and jobsResults.size()=" + jobsResults.size();
+					System.err.println(msg);
+					Logger.getLocation(Client.class).debug(msg);
+				}
+				statisticsHandler.printIterationStatistics(numIter+1, _loads.get(numIter), _duration, _jobLength, serversStatistics, jobsResults);
 				_dispatcher.resetAllServers();
 			} 
 			catch (RemoteException e) 

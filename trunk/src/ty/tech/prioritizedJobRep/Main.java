@@ -132,7 +132,7 @@ public class Main
 		Logger.getLocation(Main.class).exiting("stopServer(CommandArguments)");
 	}
 
-	private static void startClient(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException, InterruptedException, SocketException, UnknownHostException
+	private static void startClient(CommandArguments cmdArgs) throws NotBoundException, InterruptedException, IOException
 	{
 		Logger.getLocation(Main.class).entering("startClient(CommandArguments)", cmdArgs);
 		

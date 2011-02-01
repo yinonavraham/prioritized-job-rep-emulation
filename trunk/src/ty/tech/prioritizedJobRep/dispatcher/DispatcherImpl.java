@@ -144,6 +144,9 @@ public class DispatcherImpl implements Dispatcher
 	        System.out.println(msg);
 	       _location.debug(msg);			
 		}
+		
+		// reset job results container as well
+		_jobsResults.clear();
 	}
 	
 	@Override
