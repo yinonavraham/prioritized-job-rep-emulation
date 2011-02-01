@@ -10,13 +10,15 @@ public class JobResult implements Serializable
 	private String _jobId;
 	private long _startTime;
 	private long _totalTimeinSys;
+	private Priority _priority;
 
-	public JobResult(Job job, Object result) 
+	public JobResult(Job job, Priority priority, Object result) 
 	{
 		_result = result;
 		_jobId = job.getID();
 		_startTime = job.getStatistics().getStartTime();
 		_totalTimeinSys = 0;
+		_priority = priority;
 	}
 
 	public Object getResult() 
@@ -44,5 +46,9 @@ public class JobResult implements Serializable
 		return _totalTimeinSys;
 	}	
 	
+	public Priority getPriority() 
+	{
+		return _priority;
+	}	
 	
 }
