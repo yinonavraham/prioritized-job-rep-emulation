@@ -256,8 +256,8 @@ public class ServerImpl implements Server
 		System.out.println(_stats);
 		_executor.stopExecutor();
 		_resultSender.stopSender();
-		initQueues();
 		initStatistics();
+		initQueues();
 		initExecutor();
 		initJobResultSender();
 		_executor.start();
