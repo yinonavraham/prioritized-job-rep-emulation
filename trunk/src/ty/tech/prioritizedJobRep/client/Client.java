@@ -49,12 +49,13 @@ public class Client
 			System.out.println("starting iteration " + numIter);
 			Logger.getLocation(Client.class).debug("Starting iteration number " + (numIter+1) + ", load is " + _loads.get(numIter));
 			
+			_dispatcher.resetAllServers(); // reset server statistics times etc.
 			JobsGeneratorThread thread = new JobsGeneratorThread(jobId, _duration, _jobLength, _loads.get(numIter), _dispatcher);
 			thread.start();
 			thread.join(); // wait for iteration to finish
 			jobId = thread.getLastJobId();
 			
-			// get statistics, jobs results and reset all servers
+			// get statistics and jobs results
 			try 
 			{
 				ArrayList<ServerStatistics> serversStatistics = _dispatcher.getServersStatistics();
@@ -67,7 +68,6 @@ public class Client
 					Logger.getLocation(Client.class).debug(msg);
 				}
 				statisticsHandler.printIterationStatistics(numIter+1, _loads.get(numIter), _duration, _jobLength, serversStatistics, jobsResults);
-				_dispatcher.resetAllServers();
 			} 
 			catch (RemoteException e) 
 			{
