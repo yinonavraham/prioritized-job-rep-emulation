@@ -253,7 +253,7 @@ public class ServerImpl implements Server
 	public synchronized void reset()
 	{
 		_location.entering("reset()");
-		System.out.println(_stats);
+		System.out.print("Resetting server... ");
 		_executor.stopExecutor();
 		_resultSender.stopSender();
 		initStatistics();
@@ -262,6 +262,7 @@ public class ServerImpl implements Server
 		initJobResultSender();
 		_executor.start();
 		_resultSender.start();
+		System.out.println("Done.");
 		_location.exiting("reset()");
 	}
 
@@ -301,11 +302,12 @@ public class ServerImpl implements Server
 	@Override
 	public ServerStatistics getStatistics() throws RemoteException
 	{
+		_stats.close();
 		return _stats;
 	}
 	
 	
-	protected ServerStatistics getStatisticsIngternal()
+	protected ServerStatistics getStatisticsInternal()
 	{
 		return _stats;
 	} 

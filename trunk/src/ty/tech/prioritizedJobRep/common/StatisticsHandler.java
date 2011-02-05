@@ -14,14 +14,15 @@ public class StatisticsHandler
 {
 	private FileWriter _writer = null;
 	private String _newLine = "\n";
-	private String _seperator = ",";
+	private String _separator = ",";
 	private Location _location = Logger.getLocation(this.getClass());
+	private boolean _headersPrinted = false;
 	
 	public StatisticsHandler() throws IOException 
 	{
 		Date date = new Date();
 		DateFormat df = new SimpleDateFormat("ddMMyyyy");
-        DateFormat tf = new SimpleDateFormat("hhmmss");
+        DateFormat tf = new SimpleDateFormat("HHmmss");
 		String timeStamp = df.format(date) + "_" + tf.format(date);
 		_writer = new FileWriter("Results_" + timeStamp + ".csv"); //TODO: change timestamp
 	}
@@ -29,26 +30,86 @@ public class StatisticsHandler
 	public void printIterationStatistics(int iterNum, int load, int duration, int jobLength, ArrayList<ServerStatistics> serverStats, ArrayList<JobResult> jobsResults) throws IOException
 	{
 		_location.entering("printIterationStatistics()");
+		if (!_headersPrinted) printHeaders(serverStats);
 		printIterationInfo(iterNum, load, duration, jobLength);
 		printClientStats(jobsResults);
 		printServerStats(serverStats);
+		_writer.append(_newLine);
 		_writer.flush();
 		_location.exiting("printIterationStatistics()");
 	}
 	
+	private void printHeaders(ArrayList<ServerStatistics> serverStats) throws IOException
+	{
+		_location.entering("printHeaders(ArrayList<ServerStatistics>)", serverStats);
+		_headersPrinted = true;
+		// First row - servers title
+		for (int i = 0; i < 10; i++) _writer.append(_separator);
+		for (int i = 0; i < serverStats.size(); i++) 
+		{
+			_writer.append("Server " + (i+1));
+			for (int j = 0; j < 22; j++) _writer.append(_separator);
+		}
+		_writer.append("Servers - Overall");
+		// New line after first row 
+		_writer.append(_newLine);
+		// Iteration info headers
+		_writer.append("Iteration #" + _separator);
+		_writer.append("Load (jobs per minute)" + _separator);
+		_writer.append("Duration (minutes)" + _separator);
+		_writer.append("Job length (seconds)" + _separator);
+		// Client statistics headers
+		_writer.append("Total returned jobs" + _separator);
+		_writer.append("HP returned jobs" + _separator);
+		_writer.append("LP returned jobs" + _separator);
+		_writer.append("Min job total time (seconds)" + _separator);
+		_writer.append("Max job total time (seconds)" + _separator);
+		_writer.append("Avg job total time (seconds)" + _separator);
+		// Server statistics - total & per server
+		for (int i = 0; i < serverStats.size()+1; i++) 
+		{
+			_writer.append("Total idle time (seconds)" + _separator);
+			_writer.append("Avg idle time (seconds)" + _separator);
+			_writer.append("Total Jobs Finished" + _separator);
+			_writer.append("Min job length (seconds)" + _separator);
+			_writer.append("Max job length (seconds)" + _separator);
+			_writer.append("Avg job length (seconds)" + _separator);
+			_writer.append("HP max queue length" + _separator);
+			_writer.append("HP avg queue length" + _separator);		
+			_writer.append("HP max job queue time" + _separator);
+			_writer.append("HP avg job queue time" + _separator);
+			_writer.append("HP jobs received" + _separator);
+			_writer.append("HP jobs finished" + _separator);
+			_writer.append("HP jobs aborted" + _separator);
+			_writer.append("HP jobs left" + _separator);
+			_writer.append("LP max queue length" + _separator);
+			_writer.append("LP avg queue length" + _separator);
+			_writer.append("LP max job queue time" + _separator);
+			_writer.append("LP avg job queue time" + _separator);
+			_writer.append("LP jobs received" + _separator);
+			_writer.append("LP jobs finished" + _separator);
+			_writer.append("LP jobs aborted" + _separator);
+			_writer.append("LP jobs left" + _separator);
+		}
+		// New line after headers
+		_writer.append(_newLine);
+		_location.exiting("printHeaders(ArrayList<ServerStatistics>)");
+	}
+
 	// print iteration info: Load (jobs per minute), Duration (minutes), Job length (seconds)
 	private void printIterationInfo(int iterNum, int load, int duration, int jobLength) throws IOException
 	{
 		_location.entering("printIterationInfo()");
 		// iteration number
-		_writer.append("Iteration #" + iterNum);
-		_writer.append(_newLine);
-		// headers
-		_writer.append("Load (jobs per minute)" + _seperator + "Duration (minutes)" + _seperator + "Job length (seconds)");
-		_writer.append(_newLine);
+		_writer.append(iterNum + _separator);
+//		_writer.append("Iteration #" + iterNum);
+//		_writer.append(_newLine);
+//		// headers
+//		_writer.append("Load (jobs per minute)" + _seperator + "Duration (minutes)" + _seperator + "Job length (seconds)");
+//		_writer.append(_newLine);
 		// info
-		_writer.append((load + _seperator + duration + _seperator + jobLength/1000));
-		_writer.append(_newLine);
+		_writer.append((load + _separator + duration + _separator + jobLength/1000 + _separator));
+//		_writer.append(_newLine);
 		_location.exiting("printIterationInfo()");
 	}
 	
@@ -63,23 +124,23 @@ public class StatisticsHandler
 		_location.entering("printClientStats()");
 		
 		// headers
-		_writer.append("Total returned jobs" + _seperator);
-		_writer.append("HP returned jobs" + _seperator);
-		_writer.append("LP returned jobs" + _seperator);
-		_writer.append("Min job total time (seconds)" + _seperator);
-		_writer.append("Max job total time (seconds)" + _seperator);
-		_writer.append("Avg job total time (seconds)");
-		_writer.append(_newLine);	
+//		_writer.append("Total returned jobs" + _seperator);
+//		_writer.append("HP returned jobs" + _seperator);
+//		_writer.append("LP returned jobs" + _seperator);
+//		_writer.append("Min job total time (seconds)" + _seperator);
+//		_writer.append("Max job total time (seconds)" + _seperator);
+//		_writer.append("Avg job total time (seconds)");
+//		_writer.append(_newLine);	
 		
 		// data
 		ClientStatistics clientStatistics = new ClientStatistics(jobsResults);
-		_writer.append(jobsResults.size() + _seperator);
-		_writer.append(clientStatistics.getNumHPjobs() + _seperator);
-		_writer.append(clientStatistics.getNumLPjobs() + _seperator);
-		_writer.append(clientStatistics.getMinJobTime() + _seperator);
-		_writer.append(clientStatistics.getMaxJobTime() + _seperator);
-		_writer.append(Long.toString(clientStatistics.getAvgJobTime()));
-		_writer.append(_newLine);	
+		_writer.append(jobsResults.size() + _separator);
+		_writer.append(clientStatistics.getNumHPjobs() + _separator);
+		_writer.append(clientStatistics.getNumLPjobs() + _separator);
+		_writer.append(clientStatistics.getMinJobTime() + _separator);
+		_writer.append(clientStatistics.getMaxJobTime() + _separator);
+		_writer.append(Long.toString(clientStatistics.getAvgJobTime()) + _separator);
+//		_writer.append(_newLine);	
 		
 		_location.exiting("printClientStats()");
 	}
@@ -108,111 +169,107 @@ public class StatisticsHandler
 		long hpJobsReceived = 0, hpJobsFinished = 0, hpJobsAborted = 0, hpJobsLeft = 0;
 		long lpMaxQueueLength = 0, lpAvgQueueLength = 0, lpMaxJobQueueTime = 0, lpAvgJobQueueTime= 0;
 		long lpJobsReceived = 0, lpJobsFinished = 0, lpJobsAborted = 0, lpJobsLeft = 0;
-		
-		// headers
-		_writer.append(_seperator); //blank cell
-		_writer.append("Total idle time (seconds)" + _seperator);
-		_writer.append("Avg idle time (seconds)" + _seperator);
-		_writer.append("Min job length (seconds)" + _seperator);
-		_writer.append("Max job length (seconds)" + _seperator);
-		_writer.append("Avg job length (seconds)" + _seperator);
-		_writer.append("HP max queue length" + _seperator);
-		_writer.append("HP avg queue length" + _seperator);		
-		_writer.append("HP max job queue time" + _seperator);
-		_writer.append("HP avg job queue time" + _seperator);
-		_writer.append("HP jobs received" + _seperator);
-		_writer.append("HP jobs finished" + _seperator);
-		_writer.append("HP jobs aborted" + _seperator);
-		_writer.append("HP jobs left" + _seperator);
-		_writer.append("LP max queue length" + _seperator);
-		_writer.append("LP avg queue length" + _seperator);		
-		_writer.append("LP max job queue time" + _seperator);
-		_writer.append("LP avg job queue time" + _seperator);
-		_writer.append("LP jobs received" + _seperator);
-		_writer.append("LP jobs finished" + _seperator);
-		_writer.append("LP jobs aborted" + _seperator);
-		_writer.append("LP jobs left");		
-		_writer.append(_newLine);	
+		long totalJobsFinished = 0;
 		
 		// servers data
 		for (int i = 0; i < serverStats.size(); ++i)
 		{
 			ServerStatistics stats = serverStats.get(i);
-			_writer.append("Server" + (i + 1) + _seperator);
 			
+			// Total Idle Time (seconds)
 			totalIdleTime += stats.getTotalIdleTime();
-			_writer.append(stats.getTotalIdleTime()/1000 + _seperator);
+			_writer.append(stats.getTotalIdleTime()/1000.0 + _separator);
+			// Average Idle Time (seconds)
 			avgIdleTime += stats.getAvgIdleTime();
-			_writer.append(stats.getAvgIdleTime()/1000 + _seperator);
-			//minJobLength += ;
-			_writer.append("Min job length (seconds)" + _seperator); //TODO: implement
-			// maxJobLength += ;
-			_writer.append("Max job length (seconds)" + _seperator); //TODO: implement
-			// avgJobLength += ;
-			_writer.append("Avg job length (seconds)" + _seperator); //TODO: implement
+			_writer.append(stats.getAvgIdleTime()/1000.0 + _separator);
+			// Total Jobs Finished
+			totalJobsFinished += stats.getJobsFinishedCount(null);
+			_writer.append(stats.getJobsFinishedCount(null) + _separator);
+			// Min job length (seconds)
+			minJobLength += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// Max job length (seconds)
+			 maxJobLength += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// Avg job length (seconds)
+			 avgJobLength += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// HP Max Queue Length
 			hpMaxQueueLength += stats.getMaxQueueLength(Priority.High);
-			_writer.append(stats.getMaxQueueLength(Priority.High) + _seperator);
+			_writer.append(stats.getMaxQueueLength(Priority.High) + _separator);
+			// HP Average Queue Length
 			hpAvgQueueLength += stats.getAvgQueueLength(Priority.High);
-			_writer.append(stats.getAvgQueueLength(Priority.High) + _seperator);	
-			// hpMaxJobQueueTime += ;
-			_writer.append("HP max job queue time" + _seperator); //TODO: implement
-			// hpAvgJobQueueTime += ;
-			_writer.append("HP avg job queue time" + _seperator); //TODO: implement
+			_writer.append(stats.getAvgQueueLength(Priority.High) + _separator);
+			// HP max job queue time
+			 hpMaxJobQueueTime += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// HP avg job queue time
+			 hpAvgJobQueueTime += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// HP Jobs Count
 			hpJobsReceived += stats.getJobsTotalCount(Priority.High);
-			_writer.append(stats.getJobsTotalCount(Priority.High) + _seperator);//TODO: right method?
+			_writer.append(stats.getJobsTotalCount(Priority.High) + _separator);
+			// HP Jobs Finished
 			hpJobsFinished += stats.getJobsFinishedCount(Priority.High);
-			_writer.append(stats.getJobsFinishedCount(Priority.High) + _seperator);
+			_writer.append(stats.getJobsFinishedCount(Priority.High) + _separator);
+			// HP Jobs Aborted
 			hpJobsAborted = stats.getJobsAbortedCount(Priority.High);
-			_writer.append(stats.getJobsAbortedCount(Priority.High) + _seperator);
-			// hpJobsLeft += ;
-			_writer.append("HP jobs left" + _seperator);//TODO: implement
+			_writer.append(stats.getJobsAbortedCount(Priority.High) + _separator);
+			// HP jobs left
+			 hpJobsLeft += 0;
+			_writer.append("HP jobs left" + _separator);//TODO: implement
+			// LP Max Queue Length
 			lpMaxQueueLength += stats.getMaxQueueLength(Priority.Low);
-			_writer.append(stats.getMaxQueueLength(Priority.Low) + _seperator);
+			_writer.append(stats.getMaxQueueLength(Priority.Low) + _separator);
+			// LP Average Queue Length
 			lpAvgQueueLength += stats.getAvgQueueLength(Priority.Low);
-			_writer.append(stats.getAvgQueueLength(Priority.Low) + _seperator);		
-			// lpMaxJobQueueTime += ;
-			_writer.append("LP max job queue time" + _seperator); //TODO: implement
-			// lpAvgJobQueueTime += ;
-			_writer.append("LP avg job queue time" + _seperator); //TODO: implement
+			_writer.append(stats.getAvgQueueLength(Priority.Low) + _separator);	
+			// LP max job queue time
+			 lpMaxJobQueueTime += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// LP avg job queue time
+			 lpAvgJobQueueTime += 0;
+			_writer.append("" + _separator); //TODO: implement
+			// LP Jobs Count
 			lpJobsReceived += stats.getJobsTotalCount(Priority.Low);
-			_writer.append(stats.getJobsTotalCount(Priority.Low) + _seperator);//TODO: right method?
+			_writer.append(stats.getJobsTotalCount(Priority.Low) + _separator);//TODO: right method?
+			// LP Jobs Finished
 			lpJobsFinished += stats.getJobsFinishedCount(Priority.Low);
-			_writer.append(stats.getJobsFinishedCount(Priority.Low) + _seperator);
+			_writer.append(stats.getJobsFinishedCount(Priority.Low) + _separator);
+			// LP Jobs Aborted
 			lpJobsAborted += stats.getJobsAbortedCount(Priority.Low);
-			_writer.append(stats.getJobsAbortedCount(Priority.Low) + _seperator);
-			// lpJobsLeft += ;
-			_writer.append("LP jobs left");//TODO: implement	
-			_writer.append(_newLine);		
+			_writer.append(stats.getJobsAbortedCount(Priority.Low) + _separator);
+			// LP Total Jobs Left
+			 lpJobsLeft += 0;
+			_writer.append("" + _separator);//TODO: implement		
 		}
 		
 		// avg data
-		int numServers = serverStats.size();
-		_writer.append("Average" + _seperator);
-		
-		_writer.append((totalIdleTime/numServers)/1000 + _seperator);
-		_writer.append((avgIdleTime/numServers)/1000 + _seperator);
-		_writer.append(minJobLength/numServers + _seperator);
-		_writer.append(maxJobLength/numServers + _seperator);
-		_writer.append(avgJobLength/numServers + _seperator);
-		_writer.append(hpMaxQueueLength/numServers + _seperator);
-		_writer.append(hpAvgQueueLength/numServers + _seperator);		
-		_writer.append(hpMaxJobQueueTime/numServers + _seperator);
-		_writer.append(hpAvgJobQueueTime/numServers + _seperator);
-		_writer.append(hpJobsReceived/numServers + _seperator);
-		_writer.append(hpJobsFinished/numServers + _seperator);
-		_writer.append(hpJobsAborted/numServers + _seperator);
-		_writer.append(hpJobsLeft/numServers + _seperator);
-		_writer.append(lpMaxQueueLength/numServers + _seperator);
-		_writer.append(lpAvgQueueLength/numServers + _seperator);		
-		_writer.append(lpMaxJobQueueTime/numServers + _seperator);
-		_writer.append(lpAvgJobQueueTime/numServers + _seperator);
-		_writer.append(lpJobsReceived/numServers + _seperator);
-		_writer.append(lpJobsFinished/numServers + _seperator);
-		_writer.append(lpJobsAborted/numServers + _seperator);
-		_writer.append(Long.toString(lpJobsLeft/numServers));			
-		
-		_writer.append(_newLine);	
-		_writer.append(_newLine);	
+		double numServers = (double)serverStats.size();
+        _writer.append("Average" + _separator);
+        
+        _writer.append((double)(totalIdleTime/1000)/numServers + _separator);
+        _writer.append((double)(avgIdleTime/1000)/numServers + _separator);
+        _writer.append((double)totalJobsFinished/numServers + _separator);
+        _writer.append((double)minJobLength/numServers + _separator);
+        _writer.append((double)maxJobLength/numServers + _separator);
+        _writer.append((double)avgJobLength/numServers + _separator);
+        _writer.append((double)hpMaxQueueLength/numServers + _separator);
+        _writer.append((double)hpAvgQueueLength/numServers + _separator);               
+        _writer.append((double)hpMaxJobQueueTime/numServers + _separator);
+        _writer.append((double)hpAvgJobQueueTime/numServers + _separator);
+        _writer.append((double)hpJobsReceived/numServers + _separator);
+        _writer.append((double)hpJobsFinished/numServers + _separator);
+        _writer.append((double)hpJobsAborted/numServers + _separator);
+        _writer.append((double)hpJobsLeft/numServers + _separator);
+        _writer.append((double)lpMaxQueueLength/numServers + _separator);
+        _writer.append((double)lpAvgQueueLength/numServers + _separator);               
+        _writer.append((double)lpMaxJobQueueTime/numServers + _separator);
+        _writer.append((double)lpAvgJobQueueTime/numServers + _separator);
+        _writer.append((double)lpJobsReceived/numServers + _separator);
+        _writer.append((double)lpJobsFinished/numServers + _separator);
+        _writer.append((double)lpJobsAborted/numServers + _separator);
+        _writer.append(Double.toString((double)lpJobsLeft/numServers) + _separator);
 		
 		_location.exiting("printServerStats()");
 	}
