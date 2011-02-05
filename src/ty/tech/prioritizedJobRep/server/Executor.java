@@ -147,6 +147,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		_server.getStatisticsInternal().jobExecutionStarted(_currJob.getPriority());
 		long time = 0;
 		long execTime = _currJob.getExecutionTime();
+		_currJob.getStatistics().setExecutionStartTime();
 		while (!_abortJob && time < execTime)
 		{
 			try
@@ -162,6 +163,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		if (!_abortJob) 
 		{
 			System.out.println("Finished job: " + _currJob);
+			_currJob.getStatistics().setExecutionEndTime();
 			_server.sendJobBack(_currJob);
 			notifySiblings(new JobNotification(_currJob,Type.Finished));
 			_server.getStatisticsInternal().jobExecutionFinished(_currJob.getPriority());

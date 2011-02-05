@@ -27,6 +27,7 @@ public class FIFOQueue
 				if (!_elements.get(i).hasSiblingInProcess()) 
 				{
 					_stats.update(size()-1, false);
+					_elements.get(i).getStatistics().setDequeueTime();
 					return _elements.remove(i);
 				}
 		}
@@ -59,6 +60,7 @@ public class FIFOQueue
 	{
 		if (_maxSize < 0 || _elements.size() < _maxSize)
 		{
+			element.getStatistics().setEnqueueTime();
 			boolean res = _elements.add(element);
 			if (res == true) _stats.update(size(), true);
 			if (_elements.size() == 1) 
@@ -75,6 +77,7 @@ public class FIFOQueue
 	
 	public synchronized void putLast(Job element)
 	{
+		element.getStatistics().setEnqueueTime();
 		if (_maxSize >= 0 && _elements.size() >= _maxSize)
 		{
 			_elements.set(_elements.size()-1, element);
@@ -89,6 +92,7 @@ public class FIFOQueue
 	
 	public synchronized void putFirst(Job element)
 	{
+		element.getStatistics().setEnqueueTime();
 		if (_maxSize >= 0 && _elements.size() >= _maxSize)
 		{
 			_elements.remove(_elements.size()-1);
@@ -103,6 +107,7 @@ public class FIFOQueue
 	
 	public synchronized boolean remove(Job element)
 	{
+		element.getStatistics().setDequeueTime();
 		boolean res = _elements.remove(element);
 		if (res == true) _stats.update(size(), false);
 		return res;

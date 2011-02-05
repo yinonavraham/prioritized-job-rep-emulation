@@ -11,8 +11,9 @@ public class JobStatistics implements Serializable
 	private String _jobID;
 	private long _startTotalTime;
 	private long _endTotalTime;
-	private long _enqueueTime;
-	private long _dequeueTime;
+	private long _enqueueTime = -1;
+	private long _dequeueTime = -1;
+	private long _queueTime = 0;
 	private long _executionStartTime;
 	private long _executionEndTime;
 	
@@ -80,6 +81,8 @@ public class JobStatistics implements Serializable
 	public void setDequeueTime(long dequeueTime)
 	{
 		_dequeueTime = dequeueTime;
+		_queueTime += _dequeueTime - _enqueueTime;
+		_enqueueTime = -1;
 	}
 
 	
@@ -104,6 +107,7 @@ public class JobStatistics implements Serializable
 	public void setEnqueueTime(long enqueueTime)
 	{
 		_enqueueTime = enqueueTime;
+		_dequeueTime = -1;
 	}
 
 	
@@ -181,7 +185,12 @@ public class JobStatistics implements Serializable
 	
 	public long getQueueTime()
 	{
-		return _dequeueTime - _enqueueTime;
+		if (_enqueueTime < 0) return _queueTime;
+		else
+		{
+			long deq = _dequeueTime < 0 ? new Date().getTime() : _dequeueTime;
+			return _queueTime + (deq - _enqueueTime);
+		}
 	}
 
 	
