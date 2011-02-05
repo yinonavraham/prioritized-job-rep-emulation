@@ -14,6 +14,7 @@ public class ServerStatistics implements Serializable
 	private Priority _jobPriorityExecuted;
 	private long _startTime;
 	private long _endTime;
+	private boolean _closed = false;
 	// Last operation time
 	private long _executionLastOpTime;
 	// Counters
@@ -38,6 +39,7 @@ public class ServerStatistics implements Serializable
 	private void init()
 	{
 		_jobPriorityExecuted = null;
+		_closed = false;
 		initCounts();
 		initTimes();
 		initQueueStats();
@@ -230,6 +232,7 @@ public class ServerStatistics implements Serializable
 	
 	public synchronized void close()
 	{
+		if (_closed) return;
 		// Close idle total time if currently idle
 		long currTime = new Date().getTime();
 		if (_jobPriorityExecuted == null) 
@@ -242,6 +245,7 @@ public class ServerStatistics implements Serializable
 			long totalTime = _executionTotalTime.get(_jobPriorityExecuted) + timespan;
 			_executionTotalTime.put(_jobPriorityExecuted, totalTime);
 		}
+		_closed = true;
 	}
 	
 	
