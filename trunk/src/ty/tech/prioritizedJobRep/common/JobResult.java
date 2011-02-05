@@ -7,18 +7,12 @@ public class JobResult implements Serializable
 	private static final long serialVersionUID = -410386454415256326L;
 	
 	private Object _result;
-	private String _jobId;
-	private long _startTime;
-	private long _totalTimeinSys;
-	private Priority _priority;
+	private Job _job;
 
-	public JobResult(Job job, Priority priority, Object result) 
+	public JobResult(Job job, Object result) 
 	{
 		_result = result;
-		_jobId = job.getID();
-		_startTime = job.getStatistics().getStartTime();
-		_totalTimeinSys = 0;
-		_priority = priority;
+		_job = job;
 	}
 
 	public Object getResult() 
@@ -28,27 +22,21 @@ public class JobResult implements Serializable
 
 	public String getJobId() 
 	{
-		return _jobId;
+		return _job.getID();
 	}
 
-	public long getStartTime() 
+	public JobStatistics getStatistics() 
 	{
-		return _startTime;
-	}
-	
-	public void setTotalTimeinSys(long totalTime)
-	{
-		_totalTimeinSys = totalTime;
-	}
-	
-	public long getTotalTimeInSys() 
-	{
-		return _totalTimeinSys;
+		return _job.getStatistics();
 	}	
 	
 	public Priority getPriority() 
 	{
-		return _priority;
+		return _job.getPriority();
 	}	
 	
+	public Job getJob()
+	{
+		return _job;
+	}
 }

@@ -109,7 +109,7 @@ public class DispatcherImpl implements Dispatcher
 	@Override
 	public synchronized void keepJobResults(JobResult result)
 	{
-		result.setTotalTimeinSys(System.currentTimeMillis() - result.getStartTime());
+		result.getStatistics().setEndTime();
 		_jobsResults.add(result);
 	}
 	

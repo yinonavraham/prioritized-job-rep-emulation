@@ -58,7 +58,7 @@ public class JobResultSender extends Thread implements FIFOQueueListener
 		{
 			EndPoint ep = job.getDispatcher();
 			_location.debug("Sending job '" + job + "' back to dispatcher at: " + ep);
-			JobResult result = new JobResult(job, job.getPriority(), true);
+			JobResult result = new JobResult(job, true);
 			Dispatcher dispatcher = ProxyFactory.createDispatcherProxy(ep);
 			dispatcher.keepJobResults(result);
 		}
