@@ -54,7 +54,7 @@ public class ServerImpl implements Server
 			@Override
 			public void run()
 			{
-				final long timeout = 10000;
+				final long timeout = 180000; // 3 minutes = 3(m) * 60(s) * 1000(ms) = 180000ms
 				while (true)
 				{
 					try { Thread.sleep(10000); } catch (InterruptedException e) {}
