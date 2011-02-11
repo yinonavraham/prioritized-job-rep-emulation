@@ -42,7 +42,7 @@ public class ServerPolicy implements Serializable
 	 */
 	private ReEnter _LPJobReEnter;
 	/**
-	 * Length for each queue (H/L) : -1 or null = Infinit
+	 * Length for each queue (H/L) : -1 or null = Infinite
 	 */
 	private Map<Priority,Integer> _queueMaxLength = new HashMap<Priority, Integer>();
 	
@@ -94,6 +94,7 @@ public class ServerPolicy implements Serializable
 	
 	private void parseQueueMaxLength(String value)
 	{
+		_queueMaxLength.clear();
 		String[] priorities = value.split(";");
 		for (String priority : priorities)
 		{
