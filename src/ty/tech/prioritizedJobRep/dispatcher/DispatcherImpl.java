@@ -22,6 +22,7 @@ public class DispatcherImpl implements Dispatcher
 	private static ArrayList<Server> _activeServers;
 	private static ArrayList<Job> _inProgressJobsQueue;
 	private static ArrayList<JobResult> _jobsResults;
+	private DispatcherPolicy _policy;
 	private Location _location = Logger.getLocation(this.getClass());
 	private boolean _finished;
 	private static FIFOQueue _incomingJobsQueue;
@@ -36,6 +37,7 @@ public class DispatcherImpl implements Dispatcher
 		_finished = false; 
 		_incomingJobsQueue = new FIFOQueue("Dispatcher's Incoming Jobs Queue");
 		_inProgressJobsQueue = new ArrayList<Job>();
+		_policy = new DispatcherPolicy();
 	}
 	
 	public void start()
@@ -43,7 +45,7 @@ public class DispatcherImpl implements Dispatcher
 		_location.entering("start()");
 		
 		// start all listener threads
-		_jobSenderThread = new JobSenderThread();
+		_jobSenderThread = new JobSenderThread(_policy);
 		_jobSenderThread.start();
 		
 		while (!isFinished())
@@ -176,6 +178,14 @@ public class DispatcherImpl implements Dispatcher
 	private boolean isFinished()
 	{
 		return _finished;
-	}	
+	}
 
+	@Override
+	public synchronized void setPolicy(DispatcherPolicy policy) throws RemoteException
+	{
+		_policy = policy;
+		if (_jobSenderThread != null) _jobSenderThread.setPolicy(_policy);
+		System.out.println("Dispatcher policy was set:");
+		System.out.println(_policy);
+	}
 }

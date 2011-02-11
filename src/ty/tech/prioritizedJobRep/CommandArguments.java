@@ -1,10 +1,13 @@
 package ty.tech.prioritizedJobRep;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 
 public class CommandArguments
@@ -26,18 +29,20 @@ public class CommandArguments
 		_args.put("cmd", new CommandArg(
 			"cmd", 
 			"Command to execute. Supported commands (all operate on the local machine): " + NEW_LINE
-			+ "  StartServer     - Start a server" + NEW_LINE
-			+ "  StopServer      - Stop a server" + NEW_LINE
-			+ "  RegisterServer  - Register a server in the dispatcher" + NEW_LINE
-			+ "  StartDispatcher - Start the dispatcher" + NEW_LINE
-			+ "  StopDispatcher  - Stop the dispatcher" + NEW_LINE
-			+ "  StartClient     - Start the clients activity simulation",
+			+ "  StartServer         - Start a server" + NEW_LINE
+			+ "  StopServer          - Stop a server" + NEW_LINE
+			+ "  RegisterServer      - Register a server in the dispatcher" + NEW_LINE
+			+ "  StartDispatcher     - Start the dispatcher" + NEW_LINE
+			+ "  StopDispatcher      - Stop the dispatcher" + NEW_LINE
+			+ "  SetDispatcherPolicy - Set the policy for the dispatcher" + NEW_LINE
+			+ "  StartClient         - Start the clients activity simulation",
 			true, true));
 		_args.put("port", new CommandArg("port", "Port number of the entity on the local machine", true, false));
 		_args.put("target", new CommandArg("target", "Remote target identification in the format <HOST NAME or IP>:<PORT>", true, false));
 		_args.put("duration", new CommandArg("duration", "Duration of an iteration (in minutes)", true, false));
 		_args.put("joblength", new CommandArg("joblength", "Duration of job (in seconds)", true, false));
 		_args.put("loads", new CommandArg("loads", "Number of jobs to be sent in a minute", true, false));
+		_args.put("policy", new CommandArg("policy", "Policy properties file", true, false));
 		_args.put("help", new CommandArg("help", "Display help on the command line usage", false, false));
 		_args.put("?", new CommandArg("?", "Same as help", false, false));
 	}
@@ -179,6 +184,21 @@ public class CommandArguments
 			{
 				_props.put(arg, parseLoads(value));				
 			}			
+			// e.g. -policy dispatcher.policy
+			else if ("policy".equals(arg))
+			{
+				try
+				{
+					Properties properties = new Properties();
+					properties.load(new FileInputStream(value));
+					_props.put(arg, properties);	
+				}
+				catch (IOException e)
+				{
+					throw new IllegalArgumentException(
+						String.format("Failed to load the policy file '%s'. Reason: %s",value,e.getMessage()), e);
+				}
+			}
 		}
 		else
 		{
@@ -219,8 +239,10 @@ public class CommandArguments
 		System.err.println("    in the dispatcher on MYMACHINE with port 4321 use:");
 		System.err.println("       -cmd RegisterServer -port 1234 -target MYMACHINE:4321");
 		System.err.println(" 3. To start a dispatcher on the local host with port 1234 use:");
-		System.err.println("       -cmd StartDispatcher -port 1234");		
-		System.err.println(" 4. To start a client working with a dispatcher on the local host with port 1234,");
+		System.err.println("       -cmd StartDispatcher -port 1234");
+		System.err.println(" 4. To set the policy for a dispatcher on the local host with port 1234 use:");
+		System.err.println("       -cmd SetDispatcherPolicy -port 1234 -policy dispatcher.policy");
+		System.err.println(" 5. To start a client working with a dispatcher on the local host with port 1234,");
 		System.err.println("    length of each duration 5 mins, length of each job 1 sec, ");
 		System.err.println("    and 3 iterations of loads 200, 300 and 400 jobs per minute, use: ");
 		System.err.println("       -cmd StartClient -duration 5 -jobLength 1 -loads 200,300,400 -target localhost:1234");		
@@ -317,7 +339,15 @@ public class CommandArguments
 		Object obj = _props.get("loads");
 		if (obj != null) return (ArrayList<Integer>)obj;
 		else throw new IllegalArgumentException("Command is missing an argument: loads");
-	}	
+	}
+	
+	
+	public Properties getPolicy()
+	{
+		Object obj = _props.get("policy");
+		if (obj != null) return (Properties)obj;
+		else throw new IllegalArgumentException("Command is missing an argument: policy");
+	}
 	
 	
 	@Override

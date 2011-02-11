@@ -11,6 +11,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Properties;
 
 import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.client.Client;
@@ -18,6 +19,7 @@ import ty.tech.prioritizedJobRep.common.EndPoint;
 import ty.tech.prioritizedJobRep.common.Entities;
 import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
 import ty.tech.prioritizedJobRep.dispatcher.DispatcherImpl;
+import ty.tech.prioritizedJobRep.dispatcher.DispatcherPolicy;
 import ty.tech.prioritizedJobRep.logging.Logger;
 import ty.tech.prioritizedJobRep.server.Server;
 import ty.tech.prioritizedJobRep.server.ServerImpl;
@@ -55,6 +57,9 @@ public class Main
 						break;
 					case StopDispatcher:
 						stopDispatcher(cmdArgs);
+						break;
+					case SetDispatcherPolicy:
+						setDispatcherPolicy(cmdArgs);
 						break;
 					case StartClient:
 						startClient(cmdArgs);
@@ -111,11 +116,31 @@ public class Main
 
 		Dispatcher dispatcher = ProxyFactory.createDispatcherProxy("localhost", port);
 		dispatcher.stop();
-		Logger.getLocation(Main.class).debug("Server stopped.");
+		Logger.getLocation(Main.class).debug("Dispatcher stopped.");
 		
 		Logger.getLocation(Main.class).exiting("stopDispatcher(CommandArguments)");		
 	}
 
+	
+	private static void setDispatcherPolicy(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException
+	{
+		Logger.getLocation(Main.class).entering("setDispatcherPolicy(CommandArguments)", cmdArgs);
+		
+		System.out.println("Setting the policy for the dispatcher...");
+		int port = cmdArgs.getPort();
+		Properties policyProp = cmdArgs.getPolicy();
+		DispatcherPolicy policy = new DispatcherPolicy(policyProp);
+		System.out.println("Dispatcher listens on port: " + port);
+		Logger.getLocation(Main.class).debug("Setting the policy for the dispatcher which listens on port: " + port);
+
+		Dispatcher dispatcher = ProxyFactory.createDispatcherProxy("localhost", port);
+		dispatcher.setPolicy(policy);
+		Logger.getLocation(Main.class).debug("Policy was set.");
+		
+		Logger.getLocation(Main.class).exiting("setDispatcherPolicy(CommandArguments)");	
+	}
+
+	
 	private static void stopServer(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException
 	{
 		Logger.getLocation(Main.class).entering("stopServer(CommandArguments)", cmdArgs);
