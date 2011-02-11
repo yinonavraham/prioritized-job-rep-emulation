@@ -49,6 +49,8 @@ public class StatisticsHandler
 		for (int i = 0; i < serverStats.size(); i++) 
 		{
 			for (int j = 0; j < 15; j++) _writer.append(_separator);
+			// Add an empty column between the overall and the specific servers
+			if (i == 0) _writer.append(_separator); 
 			_writer.append("Server " + (i+1));
 		}
 		// New line after first row 
@@ -88,6 +90,8 @@ public class StatisticsHandler
 			_writer.append("LP jobs finished" + _separator);
 			_writer.append("LP jobs aborted" + _separator);
 			_writer.append("LP jobs left" + _separator);
+			// Add an empty column between the overall and the specific servers
+			if (i == 0) _writer.append(_separator);
 		}
 		// New line after headers
 		_writer.append(_newLine);
@@ -231,6 +235,9 @@ public class StatisticsHandler
 		_writer.append((double)lpJobsFinished/numServers + _separator);
 		_writer.append((double)lpJobsAborted/numServers + _separator);
 		_writer.append(Double.toString((double)lpJobsLeft/numServers) + _separator);
+		
+		// Add an empty column between the overall and the specific servers
+		_writer.append(_separator);
 		
 		// Data of each server
 		_writer.append(sb.toString());
