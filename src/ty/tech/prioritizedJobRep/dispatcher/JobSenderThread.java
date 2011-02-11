@@ -35,14 +35,12 @@ public class JobSenderThread extends Thread
 				//copy the job and set matching priorities
 				if (getJobReplicationsNum(Priority.High) == 1)
 				{
-					System.out.println("Create HP replication");
 					hpJob = job.clone(Priority.High);
 					hpJob.setDispatcher(job.getDispatcher());
 					hpJob.getStatistics().setStartTime(job.getStatistics().getStartTime());
 				}
 				if (getJobReplicationsNum(Priority.Low) == 1)
 				{
-					System.out.println("Create LP replication");
 					lpJob = job.clone(Priority.Low);
 					lpJob.setDispatcher(job.getDispatcher());
 					lpJob.getStatistics().setStartTime(job.getStatistics().getStartTime());
@@ -134,7 +132,6 @@ public class JobSenderThread extends Thread
 			int num = _policy.getJobReplicationsNumber(priority);
 			// Currently support only [0..1] replications of each priority
 			num = Math.min(num, 1);
-			System.out.println("RepNum(" + priority + ") = " + num);
 			return num;
 		}
 	}
@@ -149,7 +146,6 @@ public class JobSenderThread extends Thread
 		synchronized (_policyLock)
 		{
 			_policy = policy;
-			System.out.println("JobSenderThread.setPolicy: " + _policy);
 		}
 	}
 }
