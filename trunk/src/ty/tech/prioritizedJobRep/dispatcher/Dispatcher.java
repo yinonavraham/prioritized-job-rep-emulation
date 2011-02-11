@@ -63,5 +63,13 @@ public interface Dispatcher extends Remote
 	 * @throws RemoteException
 	 */
 	void stopAllServers() throws RemoteException;
+	
+	
+	/**
+	 * Set the policy for the dispatcher to work with
+	 * @param policy - policy to set
+	 * @throws RemoteException
+	 */
+	void setPolicy(DispatcherPolicy policy) throws RemoteException;
 
 }

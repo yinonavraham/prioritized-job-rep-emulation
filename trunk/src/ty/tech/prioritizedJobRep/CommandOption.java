@@ -8,7 +8,8 @@ public enum CommandOption
 	RegisterServer,
 	StartDispatcher,
 	StopDispatcher,
-	StartClient;
+	StartClient,
+	SetDispatcherPolicy;
 	
 	public static CommandOption valueOfIgnoreCase(String name)
 	{
