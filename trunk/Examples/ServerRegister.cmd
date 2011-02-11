@@ -1,0 +1,1 @@
+java -cp ty.tech.prioritizedJobRep.jar ty.tech.prioritizedJobRep.Main -cmd RegisterServer -port %1 -target localhost:7777

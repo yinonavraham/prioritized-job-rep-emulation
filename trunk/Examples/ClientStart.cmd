@@ -1,0 +1,2 @@
+java -cp ty.tech.prioritizedJobRep.jar ty.tech.prioritizedJobRep.Main -cmd StartClient -target localhost:7777 -joblength 3 -duration 1 -loads 10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200
+pause
