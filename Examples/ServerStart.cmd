@@ -1,0 +1,1 @@
+start "Server on %1" java -cp ty.tech.prioritizedJobRep.jar ty.tech.prioritizedJobRep.Main -cmd StartServer -port %1

@@ -1,0 +1,1 @@
+start "Dispatcher on 7777" java -cp ty.tech.prioritizedJobRep.jar ty.tech.prioritizedJobRep.Main -cmd StartDispatcher -port 7777
