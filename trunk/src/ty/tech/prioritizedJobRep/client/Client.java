@@ -11,6 +11,7 @@ import ty.tech.prioritizedJobRep.common.JobResult;
 import ty.tech.prioritizedJobRep.common.ServerStatistics;
 import ty.tech.prioritizedJobRep.common.StatisticsHandler;
 import ty.tech.prioritizedJobRep.dispatcher.Dispatcher;
+import ty.tech.prioritizedJobRep.dispatcher.DispatcherImpl;
 import ty.tech.prioritizedJobRep.logging.Logger;
 
 public class Client 
@@ -59,7 +60,11 @@ public class Client
 			try 
 			{
 				ArrayList<ServerStatistics> serversStatistics = _dispatcher.getServersStatistics();
-				ArrayList<JobResult> jobsResults = _dispatcher.getJobsResults();
+				ArrayList<JobResult> jobsResults;
+				synchronized (DispatcherImpl.getJobResultsLock()) 
+				{
+					jobsResults = _dispatcher.getJobsResults();
+				}
 				if (serversStatistics.size() == 0 ||  jobsResults.size() == 0)
 				{
 					String msg = "In iteration #" + numIter + ", serversStatistics.size()=" + serversStatistics.size() 

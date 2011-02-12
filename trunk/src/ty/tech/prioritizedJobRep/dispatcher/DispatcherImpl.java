@@ -5,7 +5,6 @@ import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
 
 import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.common.EndPoint;
@@ -27,8 +26,9 @@ public class DispatcherImpl implements Dispatcher
 	private Location _location = Logger.getLocation(this.getClass());
 	private boolean _finished;
 	private static FIFOQueue _incomingJobsQueue;
-	private static Lock _inProgressJobsQueueLock;
-	private static Lock _incomingJobsQueueLock;
+	private static Object _inProgressJobsQueueLock = new Object();
+	private static Object _incomingJobsQueueLock = new Object();
+	private static Object _jobsResultsLock = new Object();
 	
 	private JobSenderThread _jobSenderThread = null;
 	
@@ -107,9 +107,10 @@ public class DispatcherImpl implements Dispatcher
 	{
 		job.getStatistics().setStartTime();
 		job.setDispatcher(_endPoint);
-		_incomingJobsQueueLock.lock();
-		_incomingJobsQueue.put(job);
-		_incomingJobsQueueLock.unlock();
+		synchronized (_incomingJobsQueueLock)
+		{
+			_incomingJobsQueue.put(job);
+		}
 		System.out.println("Dispatcher got job " + job.getID());
 	}
 	
@@ -119,18 +120,22 @@ public class DispatcherImpl implements Dispatcher
 		result.getStatistics().setEndTime();
 		
 		// remove job from the in-process queue
-		_inProgressJobsQueueLock.lock();
-		ArrayList<Job> inProgressJobs = _inProgressJobsQueue;
-		for (int i = 0; i < inProgressJobs.size(); ++i)
+		synchronized (_inProgressJobsQueueLock)
 		{
-			if (result.getJobId().equals(inProgressJobs.get(i).getID()))
+			ArrayList<Job> inProgressJobs = _inProgressJobsQueue;
+			for (int i = 0; i < inProgressJobs.size(); ++i)
 			{
-				_inProgressJobsQueue.remove(i);
+				if (result.getJobId().equals(inProgressJobs.get(i).getID()))
+				{
+					_inProgressJobsQueue.remove(i);
+				}
 			}
 		}
-		_inProgressJobsQueueLock.unlock();
 		
-		_jobsResults.add(result);
+		synchronized (_jobsResultsLock)
+		{
+			_jobsResults.add(result);
+		}
 	}
 	
 	@Override
@@ -166,9 +171,19 @@ public class DispatcherImpl implements Dispatcher
 		}
 		
 		// reset job results, in progress queue and incoming jobs queue container as well
-		_jobsResults.clear();
-		_inProgressJobsQueue.clear();
-		_incomingJobsQueue.clear();
+		synchronized (_jobsResultsLock)
+		{
+			_jobsResults.clear();
+		}
+		synchronized (_inProgressJobsQueueLock) 
+		{
+			_inProgressJobsQueue.clear();
+		}
+		
+		synchronized (_incomingJobsQueueLock) 
+		{
+			_incomingJobsQueue.clear();
+		}
 	}
 	
 	@Override
@@ -185,14 +200,9 @@ public class DispatcherImpl implements Dispatcher
 		return _incomingJobsQueue;
 	}
 	
-	public synchronized static void LockIncomingJobsQueue()
+	public synchronized static Object getIncomingJobsQueueLock()
 	{
-		_incomingJobsQueueLock.lock();
-	}
-	
-	public synchronized static void UnLockIncomingJobsQueue()
-	{
-		_incomingJobsQueueLock.unlock();
+		return _incomingJobsQueueLock;
 	}	
 	
 	public synchronized static ArrayList<Server> getActiveServers()
@@ -205,14 +215,14 @@ public class DispatcherImpl implements Dispatcher
 		return _inProgressJobsQueue;
 	}	
 	
-	public synchronized static void LockInProgressJobsQueue()
+	public synchronized static Object getInProgressJobsQueueLock()
 	{
-		_inProgressJobsQueueLock.lock();
+		return _inProgressJobsQueueLock;
 	}
 	
-	public synchronized static void UnLockInProgressJobsQueue()
+	public synchronized static Object getJobResultsLock()
 	{
-		_inProgressJobsQueueLock.unlock();
+		return _jobsResultsLock;
 	}	
 	
 	private boolean isFinished()
