@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 import ty.tech.prioritizedJobRep.api.ProxyFactory;
 import ty.tech.prioritizedJobRep.common.EndPoint;
@@ -26,6 +27,8 @@ public class DispatcherImpl implements Dispatcher
 	private Location _location = Logger.getLocation(this.getClass());
 	private boolean _finished;
 	private static FIFOQueue _incomingJobsQueue;
+	private static Lock _inProgressJobsQueueLock;
+	private static Lock _incomingJobsQueueLock;
 	
 	private JobSenderThread _jobSenderThread = null;
 	
@@ -104,7 +107,9 @@ public class DispatcherImpl implements Dispatcher
 	{
 		job.getStatistics().setStartTime();
 		job.setDispatcher(_endPoint);
+		_incomingJobsQueueLock.lock();
 		_incomingJobsQueue.put(job);
+		_incomingJobsQueueLock.unlock();
 		System.out.println("Dispatcher got job " + job.getID());
 	}
 	
@@ -112,6 +117,19 @@ public class DispatcherImpl implements Dispatcher
 	public synchronized void keepJobResults(JobResult result)
 	{
 		result.getStatistics().setEndTime();
+		
+		// remove job from the in-process queue
+		_inProgressJobsQueueLock.lock();
+		ArrayList<Job> inProgressJobs = _inProgressJobsQueue;
+		for (int i = 0; i < inProgressJobs.size(); ++i)
+		{
+			if (result.getJobId().equals(inProgressJobs.get(i).getID()))
+			{
+				_inProgressJobsQueue.remove(i);
+			}
+		}
+		_inProgressJobsQueueLock.unlock();
+		
 		_jobsResults.add(result);
 	}
 	
@@ -147,8 +165,10 @@ public class DispatcherImpl implements Dispatcher
 	       _location.debug(msg);			
 		}
 		
-		// reset job results container as well
+		// reset job results, in progress queue and incoming jobs queue container as well
 		_jobsResults.clear();
+		_inProgressJobsQueue.clear();
+		_incomingJobsQueue.clear();
 	}
 	
 	@Override
@@ -165,6 +185,16 @@ public class DispatcherImpl implements Dispatcher
 		return _incomingJobsQueue;
 	}
 	
+	public synchronized static void LockIncomingJobsQueue()
+	{
+		_incomingJobsQueueLock.lock();
+	}
+	
+	public synchronized static void UnLockIncomingJobsQueue()
+	{
+		_incomingJobsQueueLock.unlock();
+	}	
+	
 	public synchronized static ArrayList<Server> getActiveServers()
 	{
 		return _activeServers;
@@ -173,6 +203,16 @@ public class DispatcherImpl implements Dispatcher
 	public synchronized static ArrayList<Job> getInProgressJobsQueue()
 	{
 		return _inProgressJobsQueue;
+	}	
+	
+	public synchronized static void LockInProgressJobsQueue()
+	{
+		_inProgressJobsQueueLock.lock();
+	}
+	
+	public synchronized static void UnLockInProgressJobsQueue()
+	{
+		_inProgressJobsQueueLock.unlock();
 	}	
 	
 	private boolean isFinished()

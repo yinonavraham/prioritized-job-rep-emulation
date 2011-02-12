@@ -29,7 +29,9 @@ public class JobSenderThread extends Thread
 		while(_isDispatcherRunning)
 		{
 			Job job = null;
+			DispatcherImpl.LockIncomingJobsQueue();
 			job = DispatcherImpl.getIncomingJobsQueue().pop();
+			DispatcherImpl.UnLockIncomingJobsQueue();
 			if (null != job)
 			{
 				//copy the job and set matching priorities
@@ -108,7 +110,9 @@ public class JobSenderThread extends Thread
 				    		if (idx1 != idx2) lpJob.addSiblingLocation(servers.get(idx1).getEndPoint());
 							servers.get(idx2).putJob(lpJob);
 				    	}
+				    	DispatcherImpl.LockInProgressJobsQueue();
 						DispatcherImpl.getInProgressJobsQueue().add(job);
+						DispatcherImpl.UnLockInProgressJobsQueue();
 				    }
 				    catch(Exception e) 
 					{
