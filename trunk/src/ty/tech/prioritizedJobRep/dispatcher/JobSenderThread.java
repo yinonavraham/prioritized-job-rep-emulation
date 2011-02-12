@@ -48,36 +48,22 @@ public class JobSenderThread extends Thread
 				
 				// get all available servers
 				ArrayList<Server> servers = DispatcherImpl.getActiveServers();
+				// if there's HP and HP need at least 2 servers, else just 1
+				int minNumServers = (getJobReplicationsNum(Priority.High) == 1) ? 2 : 1;
 				
-				// get random 2 servers out of these
-				int idx1 = -1, idx2 = -1;
-			    Random randomGenerator = new Random();
-			    
-			    // get first server index
-			    while(idx1 == -1)
-			    {
-			    	try
-			    	{
-					    idx1 = randomGenerator.nextInt(servers.size());
-					    servers.get(idx1).ping(); // will throw if there is no answer
-			    	}
-			    	catch(RemoteException e)
-			    	{
-			    		System.err.println("Cannot ping registered server");
-			    		Logger.getLocation(this.getClass()).throwing("JobServerThread.run()", e);
-			    	}			    	
-			    }
-			    
-			    // If need to replicate
-			    if (hpJob != null && lpJob != null)
-			    {
-				    // get the second server index until it is different than the first one
-				    while(idx2 == -1 || idx1 == idx2)
+				if (servers.size() >= minNumServers)
+				{
+					// get random 2 servers out of these
+					int idx1 = -1, idx2 = -1;
+				    Random randomGenerator = new Random();
+				    
+				    // get first server index
+				    while(idx1 == -1 && _isDispatcherRunning)
 				    {
 				    	try
 				    	{
-						    idx2 = randomGenerator.nextInt(servers.size());
-						    servers.get(idx2).ping(); // will throw if there is no answer
+						    idx1 = randomGenerator.nextInt(servers.size());
+						    servers.get(idx1).ping(); // will throw if there is no answer
 				    	}
 				    	catch(RemoteException e)
 				    	{
@@ -85,32 +71,50 @@ public class JobSenderThread extends Thread
 				    		Logger.getLocation(this.getClass()).throwing("JobServerThread.run()", e);
 				    	}			    	
 				    }
-			    }
-			    else // Only one instance of the job will be sent to a single server
-			    {
-			    	idx2 = idx1;
-			    }
-
-			    // send the jobs and move the original one to the inProcessQueue
-			    try 
-			    {
-			    	if (hpJob != null)
-			    	{
-				    	if (idx1 != idx2) hpJob.addSiblingLocation(servers.get(idx2).getEndPoint());
-						servers.get(idx1).putJob(hpJob);
-			    	}
-			    	if (lpJob != null)
-			    	{
-			    		if (idx1 != idx2) lpJob.addSiblingLocation(servers.get(idx1).getEndPoint());
-						servers.get(idx2).putJob(lpJob);
-			    	}
-					DispatcherImpl.getInProgressJobsQueue().add(job);
-			    }
-			    catch(Exception e) 
-				{
-			    	e.printStackTrace();
-					System.err.println("Error occured in JobSenderThread run: " + e.getMessage());
-				} 
+				    
+				    // If need to replicate
+				    if (hpJob != null && lpJob != null)
+				    {
+					    // get the second server index until it is different than the first one
+					    while((idx2 == -1 || idx1 == idx2) && _isDispatcherRunning)
+					    {
+					    	try
+					    	{
+							    idx2 = randomGenerator.nextInt(servers.size());
+							    servers.get(idx2).ping(); // will throw if there is no answer
+					    	}
+					    	catch(RemoteException e)
+					    	{
+					    		System.err.println("Cannot ping registered server");
+					    		Logger.getLocation(this.getClass()).throwing("JobServerThread.run()", e);
+					    	}			    	
+					    }
+				    }
+				    else // Only one instance of the job will be sent to a single server
+				    {
+				    	idx2 = idx1;
+				    }
+	
+				    // send the jobs and move the original one to the inProcessQueue
+				    try 
+				    {
+				    	if (hpJob != null)
+				    	{
+					    	if (idx1 != idx2) hpJob.addSiblingLocation(servers.get(idx2).getEndPoint());
+							servers.get(idx1).putJob(hpJob);
+				    	}
+				    	if (lpJob != null)
+				    	{
+				    		if (idx1 != idx2) lpJob.addSiblingLocation(servers.get(idx1).getEndPoint());
+							servers.get(idx2).putJob(lpJob);
+				    	}
+						DispatcherImpl.getInProgressJobsQueue().add(job);
+				    }
+				    catch(Exception e) 
+					{
+						System.err.println("Error occured in JobSenderThread run: " + e.getMessage());
+					} 
+				}
 			}
 			try 
 			{
