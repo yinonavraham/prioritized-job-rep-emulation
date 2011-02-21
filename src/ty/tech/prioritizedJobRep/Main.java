@@ -1,6 +1,7 @@
 package ty.tech.prioritizedJobRep;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.rmi.AccessException;
@@ -23,6 +24,7 @@ import ty.tech.prioritizedJobRep.dispatcher.DispatcherPolicy;
 import ty.tech.prioritizedJobRep.logging.Logger;
 import ty.tech.prioritizedJobRep.server.Server;
 import ty.tech.prioritizedJobRep.server.ServerImpl;
+import ty.tech.prioritizedJobRep.util.NetUtils;
 
 
 public class Main
@@ -64,6 +66,9 @@ public class Main
 					case StartClient:
 						startClient(cmdArgs);
 						break;
+					case GetLocalAddress:
+						printLocalAddress();
+						break;
 					default:
 						System.err.println(cmdOp + " : Command is not supported");
 						Logger.getLocation(Main.class).debug(cmdOp + " : Command is not supported");
@@ -81,6 +86,20 @@ public class Main
 			Logger.getLocation(Main.class).throwing("main(String[])", e);
 		}
 		Logger.getLocation(Main.class).exiting("main(String[])");
+	}
+
+	private static void printLocalAddress()
+	{
+		try
+		{
+			InetAddress address = NetUtils.detectLocalActiveIP();
+			System.out.println("Host name: " + address.getHostName());
+			System.out.println("Host address: " + address.getHostAddress());
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	private static void registerServer(CommandArguments cmdArgs) throws AccessException, RemoteException, NotBoundException

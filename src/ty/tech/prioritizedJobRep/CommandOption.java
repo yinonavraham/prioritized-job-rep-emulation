@@ -9,7 +9,8 @@ public enum CommandOption
 	StartDispatcher,
 	StopDispatcher,
 	StartClient,
-	SetDispatcherPolicy;
+	SetDispatcherPolicy,
+	GetLocalAddress;
 	
 	public static CommandOption valueOfIgnoreCase(String name)
 	{

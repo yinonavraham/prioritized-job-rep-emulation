@@ -35,6 +35,7 @@ public class CommandArguments
 			+ "  StartDispatcher     - Start the dispatcher" + NEW_LINE
 			+ "  StopDispatcher      - Stop the dispatcher" + NEW_LINE
 			+ "  SetDispatcherPolicy - Set the policy for the dispatcher" + NEW_LINE
+			+ "  GetLocalAddress     - Display the address of the local host" + NEW_LINE
 			+ "  StartClient         - Start the clients activity simulation",
 			true, true));
 		_args.put("port", new CommandArg("port", "Port number of the entity on the local machine", true, false));
