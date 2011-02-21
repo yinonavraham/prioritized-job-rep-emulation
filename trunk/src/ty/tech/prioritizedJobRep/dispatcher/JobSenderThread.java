@@ -22,12 +22,11 @@ public class JobSenderThread extends Thread
 	}
 	
 	public void run() 
-	{
-		Job hpJob = null;
-		Job lpJob = null;
-		
+	{	
 		while(_isDispatcherRunning)
 		{
+			Job hpJob = null;
+			Job lpJob = null;			
 			Job job = null;
 			synchronized (DispatcherImpl.getIncomingJobsQueueLock())
 			{
