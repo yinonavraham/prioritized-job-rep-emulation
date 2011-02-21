@@ -182,7 +182,7 @@ public class ServerImpl implements Server
 	public void abortJob(Job job)
 	{
 		_location.entering("abortJob(job)",job);
-		System.out.println("Aborting job: " + job);
+		System.out.println("Aborting job: " + job.getID());
 		Priority p = job.getPriority();
 		FIFOQueue queue = _queues.get(p);
 		synchronized (queue)
@@ -196,7 +196,7 @@ public class ServerImpl implements Server
 				_executor.abortJob(job);
 			}
 		}
-		System.out.println("Job aborted: " + job);
+		System.out.println("Job aborted: " + job.getID());
 		_location.exiting("abortJob()");
 	}
 	
@@ -232,16 +232,16 @@ public class ServerImpl implements Server
 		{
 			case First:
 				queue.putFirst(job);
-				System.out.println("Reenter job to be first: " + job);
+				System.out.println("Reenter job to be first: " + job.getID());
 				_location.debug("Reenter job to be first: " + job);
 				break;
 			case Last:
 				queue.putLast(job);
-				System.out.println("Reenter job to be last: " + job);
+				System.out.println("Reenter job to be last: " + job.getID());
 				_location.debug("Reenter job to be last: " + job);
 				break;
 			case No:
-				System.out.println("Job will not be reentered: " + job);
+				System.out.println("Job will not be reentered: " + job.getID());
 				_location.debug("Job will not be reentered: " + job);
 				break;
 		}
@@ -351,7 +351,7 @@ public class ServerImpl implements Server
 			// Abort the job's execution if it is the current job
 			if (_executor.abortJob(job))
 			{
-				System.out.println("Job was aborted due to a sibling that started: " + job);
+				System.out.println("Job was aborted due to a sibling that started: " + job.getID());
 				synchronized (_jobsToAbort)
 				{
 					_jobsToAbort.remove(job);
@@ -374,7 +374,7 @@ public class ServerImpl implements Server
 		// Abort the job's execution if it is the current job
 		if (_executor.abortJob(job))
 		{
-			System.out.println("Job was aborted due to a sibling that finished: " + job);
+			System.out.println("Job was aborted due to a sibling that finished: " + job.getID());
 			synchronized (_jobsToAbort)
 			{
 				_jobsToAbort.remove(job);
