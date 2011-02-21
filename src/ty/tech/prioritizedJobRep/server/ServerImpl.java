@@ -254,6 +254,10 @@ public class ServerImpl implements Server
 	{
 		_location.entering("reset()");
 		System.out.print("Resetting server... ");
+		synchronized (_jobsToAbort)
+		{
+			_jobsToAbort.clear();	
+		}
 		_executor.stopExecutor();
 		_resultSender.stopSender();
 		initStatistics();
