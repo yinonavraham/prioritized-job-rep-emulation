@@ -40,7 +40,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		Job currJob = _currJob;
 		_abortJob = true;
 		this.interrupt();
-		System.out.println("Current job aborted: " + currJob);
+		System.out.println("Current job aborted: " + (currJob == null ? "none" : currJob.getID()));
 		_location.exiting("abortJob()");
 	}
 	
@@ -119,7 +119,7 @@ public class Executor extends Thread implements FIFOQueueListener
 					_abortJob = false;
 					processCurrentJob();
 				}
-				else System.out.println("Job was marked to be aborted: " + job);
+				else System.out.println("Job was marked to be aborted: " + job.getID());
 			}
 			else if (!lpQueue.isEmpty())
 			{
@@ -130,7 +130,7 @@ public class Executor extends Thread implements FIFOQueueListener
 					_abortJob = false;
 					processCurrentJob();
 				}
-				else System.out.println("Job was marked to be aborted: " + job);
+				else System.out.println("Job was marked to be aborted: " + job.getID());
 			}
 			try { sleep(1); } catch (InterruptedException e) {}
 		}
@@ -170,7 +170,7 @@ public class Executor extends Thread implements FIFOQueueListener
 		}
 		else 
 		{
-			System.out.println("Job execution aborted: " + _currJob);
+			System.out.println("Job execution aborted: " + (_currJob == null ? "none" : _currJob.getID()));
 			notifySiblings(new JobNotification(_currJob,Type.Aborted));
 			_server.getStatisticsInternal().jobExecutionAborted(_currJob.getPriority());
 		}
