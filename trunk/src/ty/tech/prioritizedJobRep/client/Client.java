@@ -83,8 +83,7 @@ public class Client
 			thread.interrupt();
 		}
 
-		//TODO: call statistics
-		Logger.getLocation(Client.class).debug("Calculating statistics");
+		_dispatcher.resetAllServers(); // reset server statistics times etc.
 		
 		Logger.getLocation(Client.class).exiting("start()");
 	}
