@@ -103,11 +103,13 @@ public class JobSenderThread extends Thread
 				    	if (hpJob != null)
 				    	{
 					    	if (idx1 != idx2) hpJob.addSiblingLocation(servers.get(idx2).getEndPoint());
+				    		System.out.println("Send job " + hpJob + " to " + servers.get(idx1).getEndPoint());
 							servers.get(idx1).putJob(hpJob);
 				    	}
 				    	if (lpJob != null)
 				    	{
 				    		if (idx1 != idx2) lpJob.addSiblingLocation(servers.get(idx1).getEndPoint());
+				    		System.out.println("Send job " + lpJob + " to " + servers.get(idx2).getEndPoint());
 							servers.get(idx2).putJob(lpJob);
 				    	}
 				    	synchronized (DispatcherImpl.getInProgressJobsQueueLock())
