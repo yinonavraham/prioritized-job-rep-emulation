@@ -7,8 +7,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import ty.tech.prioritizedJobRep.api.ProxyFactory;
@@ -33,6 +31,7 @@ public class ServerImpl implements Server
 	private Map<Job,Long> _jobsToAbort = new HashMap<Job,Long>();
 	private JobResultSender _resultSender;
 	private Location _location = Logger.getLocation(this.getClass());
+	private JobsToAbortDaemon _jobsToAbortDaemon = null;
 	
 	
 	public ServerImpl(int port) throws SocketException, UnknownHostException
@@ -49,41 +48,14 @@ public class ServerImpl implements Server
 
 	private void startJobsToAbortCleanerDaemon()
 	{
-		Thread t = new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				final long timeout = 180000; // 3 minutes = 3(m) * 60(s) * 1000(ms) = 180000ms
-				while (true)
-				{
-					try { Thread.sleep(10000); } catch (InterruptedException e) {}
-					_location.debug("JobsToAbortCleaner: Started iteration");
-					long currTime = new Date().getTime();
-					synchronized (_jobsToAbort)
-					{
-						List<Job> jobs = new LinkedList<Job>();
-						for (Job job : _jobsToAbort.keySet())
-						{
-							Long time = _jobsToAbort.get(job);
-							if (time == null || currTime - time > timeout)
-							{
-								jobs.add(job);		
-							}
-						}
-						for (Job job : jobs)
-						{
-							_location.debug("JobsToAbortCleaner: Remove job " + job);
-							_jobsToAbort.remove(job);
-						}
-					}
-					_location.debug("JobsToAbortCleaner: Finished iteration");
-				}
-			}
-		});
-		t.setDaemon(true);
-		t.setName("JobsToAbortCleanerDaemon");
-		t.start();
+		_jobsToAbortDaemon = new JobsToAbortDaemon(_jobsToAbort);
+		_jobsToAbortDaemon.start();
+	}
+	
+
+	private void stopJobsToAbortCleanerDaemon()
+	{
+		if (_jobsToAbortDaemon != null) _jobsToAbortDaemon.stopDaemon();
 	}
 	
 	
@@ -210,6 +182,7 @@ public class ServerImpl implements Server
 			if (_jobsToAbort.containsKey(job))
 			{
 				_jobsToAbort.remove(job);
+				System.out.println("Received job was tagged to be aborted: " + job);
 				_location.debug("Received job was tagged to be aborted: " + job);
 				_location.exiting("putJob()");
 				return;
@@ -218,6 +191,7 @@ public class ServerImpl implements Server
 		Priority p = job.getPriority();
 		FIFOQueue queue = _queues.get(p);
 		queue.put(job);
+		System.out.println("Received job was added to queue: " + job);
 		_location.debug("Received job was added to queue: " + job);
 		_location.exiting("putJob()");
 	}
@@ -254,6 +228,7 @@ public class ServerImpl implements Server
 	{
 		_location.entering("reset()");
 		System.out.print("Resetting server... ");
+		stopJobsToAbortCleanerDaemon();
 		synchronized (_jobsToAbort)
 		{
 			_jobsToAbort.clear();	
@@ -264,6 +239,7 @@ public class ServerImpl implements Server
 		initQueues();
 		initExecutor();
 		initJobResultSender();
+		startJobsToAbortCleanerDaemon();
 		_executor.start();
 		_resultSender.start();
 		System.out.println("Done.");
