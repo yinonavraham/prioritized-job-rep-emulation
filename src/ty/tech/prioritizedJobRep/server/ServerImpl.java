@@ -319,18 +319,22 @@ public class ServerImpl implements Server
 		// If the job that started is the HP sibling
 		if (Priority.High.equals(p))
 		{
-			// Add the job to the list of sibling jobs that started
-			synchronized (_jobsToAbort)
+			// Try to remove the job from the Low Priority queue, otherwise... 
+			if (!getQueue(Priority.Low).remove(job))
 			{
-				_jobsToAbort.put(job,new Date().getTime());
-			}
-			// Abort the job's execution if it is the current job
-			if (_executor.abortJob(job))
-			{
-				System.out.println("Job was aborted due to a sibling that started: " + job.getID());
+				// Add the job to the list of sibling jobs that started
 				synchronized (_jobsToAbort)
 				{
-					_jobsToAbort.remove(job);
+					_jobsToAbort.put(job,new Date().getTime());
+				}
+				// Abort the job's execution if it is the current job
+				if (_executor.abortJob(job))
+				{
+					System.out.println("Job was aborted due to a sibling that started: " + job.getID());
+					synchronized (_jobsToAbort)
+					{
+						_jobsToAbort.remove(job);
+					}
 				}
 			}
 		}
@@ -341,19 +345,23 @@ public class ServerImpl implements Server
 	private void jobSiblingFinished(Job job) throws RemoteException
 	{
 		_location.entering("jobSiblingFinished(job)", job);
-//		Priority p = job.getPriority();
-		// Add the job to the list of sibling jobs that need to be aborted
-		synchronized (_jobsToAbort)
+		Priority otherPriority = Priority.High.equals(job.getPriority()) ? Priority.Low : Priority.High;
+		// Try to remove the job from the queue of the other priority, otherwise...
+		if (!getQueue(otherPriority).remove(job))
 		{
-			_jobsToAbort.put(job,new Date().getTime());
-		}
-		// Abort the job's execution if it is the current job
-		if (_executor.abortJob(job))
-		{
-			System.out.println("Job was aborted due to a sibling that finished: " + job.getID());
+			// Add the job to the list of sibling jobs that need to be aborted
 			synchronized (_jobsToAbort)
 			{
-				_jobsToAbort.remove(job);
+				_jobsToAbort.put(job,new Date().getTime());
+			}
+			// Abort the job's execution if it is the current job
+			if (_executor.abortJob(job))
+			{
+				System.out.println("Job was aborted due to a sibling that finished: " + job.getID());
+				synchronized (_jobsToAbort)
+				{
+					_jobsToAbort.remove(job);
+				}
 			}
 		}
 		_location.exiting("jobSiblingFinished(job)");
