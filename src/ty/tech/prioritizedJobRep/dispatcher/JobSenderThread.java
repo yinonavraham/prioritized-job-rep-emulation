@@ -125,7 +125,7 @@ public class JobSenderThread extends Thread
 			}
 			try 
 			{
-				Thread.sleep(500);
+				Thread.sleep(10);
 			}
 			catch (InterruptedException e) 
 			{
